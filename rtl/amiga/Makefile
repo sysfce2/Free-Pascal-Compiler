@@ -790,9 +790,7 @@ PROFILEUNIT=profile
 RASPI2UNIT=raspi2
 RASPI3UNIT=raspi3
 RASPIUARTUNIT=raspiuart
-ifeq ($(RTLCONSTSUNIT),)
-  RTLCONSTSUNIT=rtlconsts
-endif
+RTLCONSTSUNIT=rtlconsts
 SAM3X8EUNIT=sam3x8e
 SAMD51P19AUNIT=samd51p19a
 SC32442BUNIT=sc32442b
@@ -921,7 +919,7 @@ endif
 ifeq ($(CPU_OS_TARGET),powerpc-amiga)
 override TARGET_RSTS+=math rtlconsts typinfo classes sysconst
 endif
-override INSTALL_FPCPACKAGE=y
+override INSTALL_FPCPACKAGE=y y
 ifeq ($(CPU_OS_TARGET),m68k-amiga)
 override COMPILER_INCLUDEDIR+=$(INC) $(PROCINC) $(CPU_TARGET) $(AMIINC)
 endif
@@ -2556,7 +2554,7 @@ System.CharSet$(PPUEXT) : $(NSINC)/System.CharSet.pp $(CHARSET_DEPS)
 	$(COMPILER) $(CHARSET_OPT) $< 
 UNICODEDATA_DEPS = $(OBJPASDIR)/unicodedata.pas $(OBJPASDIR)/unicodedata.inc \
 		   $(OBJPASDIR)/unicodedata_le.inc $(OBJPASDIR)/unicodedata_be.inc \
-		   $(SYSTEMUNIT)$(PPUEXT)
+		   $(SYSTEMUNIT)$(PPUEXT) objpas$(PPUEXT)
 unicodedata$(PPUEXT) : $(UNICODEDATA_DEPS)
 	$(COMPILER) -Fi$(OBJPASDIR) $(UNICODEDATA_OPT) $<
 System.CodePages.unicodedata$(PPUEXT) : $(NSINC)/System.CodePages.unicodedata.pas $(UNICODEDATA_DEPS)
@@ -2568,8 +2566,16 @@ cpall$(PPUEXT): $(CPALL_DEPS)
 	$(COMPILER) $(CPALL_OPT) -Fu$(INC) -Fi$(RTL)/charmaps $<
 System.CodePages.All$(PPUEXT):  $(NSINC)/System.CodePages.All.pas $(CPALL_DEPS)
 	$(COMPILER) $(CPALL_OPT) -Fu$(INC) -Fi$(RTL)/charmaps $<
-FPWIDESTRING_DEPS=$(OBJPASDIR)/fpwidestring.pp \
-		  $(SYSTEMUNIT)$(PPUEXT) objpas$(PPUEXT) \
+ifneq ($(UNIXINC),)
+  FPWIDESTRING_DEPS_OS:=$(FPWIDESTRING_DEPS_OS) $(UNIXCPUNIT)$(PPUEXT)
+endif
+ifeq ($(AMIINC),)
+  RTLDEFSINCDIR = $(OSDIR)
+else
+  RTLDEFSINCDIR=$(AMIINC)
+endif
+FPWIDESTRING_DEPS=$(OBJPASDIR)/fpwidestring.pp $(RTLDEFSINCDIR)/rtldefs.inc \
+		  $(SYSTEMUNIT)$(PPUEXT) objpas$(PPUEXT) $(UNICODEDATAUNIT)$(PPUEXT) \
 		  $(CHARACTERUNIT)$(PPUEXT) $(CPALLUNIT)$(PPUEXT) \
 		  $(FPWIDESTRING_DEPS_OS) $(FPWIDESTRING_DEPS_CPU)
 fpwidestring$(PPUEXT): $(FPWIDESTRING_DEPS)

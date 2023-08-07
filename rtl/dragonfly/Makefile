@@ -789,9 +789,7 @@ PROFILEUNIT=profile
 RASPI2UNIT=raspi2
 RASPI3UNIT=raspi3
 RASPIUARTUNIT=raspiuart
-ifeq ($(RTLCONSTSUNIT),)
-  RTLCONSTSUNIT=rtlconsts
-endif
+RTLCONSTSUNIT=rtlconsts
 SAM3X8EUNIT=sam3x8e
 SAMD51P19AUNIT=samd51p19a
 SC32442BUNIT=sc32442b
@@ -2533,7 +2531,7 @@ System.CharSet$(PPUEXT) : $(NSINC)/System.CharSet.pp $(CHARSET_DEPS)
 	$(COMPILER) $(CHARSET_OPT) $< 
 UNICODEDATA_DEPS = $(OBJPASDIR)/unicodedata.pas $(OBJPASDIR)/unicodedata.inc \
 		   $(OBJPASDIR)/unicodedata_le.inc $(OBJPASDIR)/unicodedata_be.inc \
-		   $(SYSTEMUNIT)$(PPUEXT)
+		   $(SYSTEMUNIT)$(PPUEXT) objpas$(PPUEXT)
 unicodedata$(PPUEXT) : $(UNICODEDATA_DEPS)
 	$(COMPILER) -Fi$(OBJPASDIR) $(UNICODEDATA_OPT) $<
 System.CodePages.unicodedata$(PPUEXT) : $(NSINC)/System.CodePages.unicodedata.pas $(UNICODEDATA_DEPS)
@@ -2545,8 +2543,16 @@ cpall$(PPUEXT): $(CPALL_DEPS)
 	$(COMPILER) $(CPALL_OPT) -Fu$(INC) -Fi$(RTL)/charmaps $<
 System.CodePages.All$(PPUEXT):  $(NSINC)/System.CodePages.All.pas $(CPALL_DEPS)
 	$(COMPILER) $(CPALL_OPT) -Fu$(INC) -Fi$(RTL)/charmaps $<
-FPWIDESTRING_DEPS=$(OBJPASDIR)/fpwidestring.pp \
-		  $(SYSTEMUNIT)$(PPUEXT) objpas$(PPUEXT) \
+ifneq ($(UNIXINC),)
+  FPWIDESTRING_DEPS_OS:=$(FPWIDESTRING_DEPS_OS) $(UNIXCPUNIT)$(PPUEXT)
+endif
+ifeq ($(AMIINC),)
+  RTLDEFSINCDIR = $(OSDIR)
+else
+  RTLDEFSINCDIR=$(AMIINC)
+endif
+FPWIDESTRING_DEPS=$(OBJPASDIR)/fpwidestring.pp $(RTLDEFSINCDIR)/rtldefs.inc \
+		  $(SYSTEMUNIT)$(PPUEXT) objpas$(PPUEXT) $(UNICODEDATAUNIT)$(PPUEXT) \
 		  $(CHARACTERUNIT)$(PPUEXT) $(CPALLUNIT)$(PPUEXT) \
 		  $(FPWIDESTRING_DEPS_OS) $(FPWIDESTRING_DEPS_CPU)
 fpwidestring$(PPUEXT): $(FPWIDESTRING_DEPS)
@@ -2894,8 +2900,6 @@ lnfodwrf$(PPUEXT) : $(INC)/lnfodwrf.pp $(SYSTEMUNIT)$(PPUEXT) sysutils$(PPUEXT) 
 charset$(PPUEXT) : $(INC)/charset.pp $(SYSTEMUNIT)$(PPUEXT)
 cpall$(PPUEXT): $(RTL)/charmaps/cpall.pas system$(PPUEXT) charset$(PPUEXT)
 	$(COMPILER) -Fu$(INC) -Fi$(RTL)/charmaps $(RTL)/charmaps/cpall.pas
-fpwidestring$(PPUEXT): $(OBJPASDIR)/fpwidestring.pp character$(PPUEXT) unixcp$(PPUEXT)
-	$(COMPILER) $(OBJPASDIR)/fpwidestring.pp
 errors$(PPUEXT) : $(UNIXINC)/errors.pp strings$(PPUEXT) $(SYSTEMUNIT)$(PPUEXT)
 callspec$(PPUEXT) : $(INC)/callspec.pp $(SYSTEMUNIT)$(PPUEXT)
 cmem$(PPUEXT) : $(INC)/cmem.pp $(SYSTEMUNIT)$(PPUEXT)
