@@ -26,6 +26,7 @@ type
     procedure CleanOutputDir(Dir: string); overload;
     procedure Compile;
     procedure CheckCompiled(const Expected: TStringArray);
+    procedure TouchFile(const aFilename: string);
     procedure MakeDateDiffer(const File1, File2: string);
     property PP: string read FPP write FPP;
     property UnitPath: string read FUnitPath write FUnitPath;
@@ -39,8 +40,9 @@ type
     procedure CheckCompiler;
   published
     procedure TestTwoUnits; // 2 units, recompile first
-    procedure TestChangeLeaf1; // prog->ant->bird, change bird
+    procedure TestChangeLeaf1; // prog->ant->bird, change bird, recompile ant as well
     procedure TestChangeInner1; // prog->ant->bird, change ant, keep bird.ppu
+    procedure TestTouchLeaf1; // TODO prog->ant->bird, touch bird, keep ant.ppu
 
     procedure TestCycle2_ChangeB; // prog->ant->bird, bird.impl->ant, change bird
     procedure TestCycle3_ChangeC; // prog->ant->bird->cat, cat.impl->ant, change cat
@@ -189,6 +191,16 @@ begin
   end;
 end;
 
+procedure TTestRecompile.TouchFile(const aFilename: string);
+var
+  Age1: Int64;
+begin
+  Age1:=FileAge(aFilename);
+  if Age1<0 then
+    Fail('file not found "'+aFilename+'"');
+  FileSetDate(aFilename,Age1+2);
+end;
+
 procedure TTestRecompile.MakeDateDiffer(const File1, File2: string);
 var
   Age1, Age2: Int64;
@@ -260,7 +272,7 @@ begin
 end;
 
 procedure TTestRecompile.TestChangeLeaf1;
-// prog->ant->bird, change bird
+// prog->ant->bird, change bird, recompile ant
 var
   Dir: String;
 begin
@@ -307,6 +319,30 @@ begin
   Compile;
   // the main src is always compiled, ant changed, bird is kept
   CheckCompiled(['changeinner1_prg.pas','changeinner1_ant.pas']);
+end;
+
+procedure TTestRecompile.TestTouchLeaf1;
+// prog->ant->bird, touch bird, keep ant.ppu
+var
+  Dir: String;
+begin
+  exit; // TODO
+
+  Dir:='touchleaf1';
+  UnitPath:=Dir;
+  OutDir:=Dir+PathDelim+'ppus';
+  MainSrc:=Dir+PathDelim+'touchleaf1_prg.pas';
+
+  Step:='First compile';
+  CleanOutputDir;
+  Compile;
+  CheckCompiled(['touchleaf1_prg.pas','touchleaf1_ant.pas','touchleaf1_bird.pas']);
+
+  Step:='Second compile';
+  TouchFile(Dir+PathDelim+'touchleaf1_bird.pas');
+  Compile;
+  // the main src is always compiled, bird changed but same CRC, so ant.ppu must be kept
+  CheckCompiled(['touchleaf1_prg.pas','touchleaf1_bird.pas']);
 end;
 
 procedure TTestRecompile.TestCycle2_ChangeB;
