@@ -980,7 +980,6 @@ implementation
              begin
              M:=tmodule(waitingforunit.Items[i]);
              write(m.modulename^,' (state:',M.state,') ');
-
              end;
            Writeln;
            internalerror(2016070501);

@@ -1986,6 +1986,7 @@ var
 
 
     procedure tppumodule.load_usedunits;
+      // self is a ppu (or in a package)
       var
         pu           : tused_unit;
       begin
@@ -2000,7 +2001,7 @@ var
             begin
               tppumodule(pu.u).loadppu(self);
               { if this unit is scheduled for compilation or compiled we can stop }
-              if state in [ms_compile,ms_compiled,ms_processed] then
+              if state<>ms_load then
                 exit;
               { add this unit to the dependencies }
               pu.u.adddependency(self,true);
@@ -2107,10 +2108,10 @@ var
 
         derefunitimportsyms;
 
-         { read whole program optimisation-related information }
-         wpoinfo:=tunitwpoinfo.ppuload(ppufile);
-         tunitwpoinfo(wpoinfo).deref;
-         tunitwpoinfo(wpoinfo).derefimpl;
+        { read whole program optimisation-related information }
+        wpoinfo:=tunitwpoinfo.ppuload(ppufile);
+        tunitwpoinfo(wpoinfo).deref;
+        tunitwpoinfo(wpoinfo).derefimpl;
       end;
 
 
@@ -2268,7 +2269,7 @@ var
           state:=ms_load
         else begin
           {$IFDEF DEBUG_PPU_CYCLES}
-          writeln('PPUALGO tppumodule.try_load_ppufile ',modulename^,' old=',state,' new=',ms_compile);
+          writeln('PPUALGO tppumodule.try_load_ppufile ',modulename^,' no ppu found old=',state,' new=',ms_compile);
           {$ENDIF}
           state:=ms_compile;
         end;
