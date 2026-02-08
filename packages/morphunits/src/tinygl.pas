@@ -16,7 +16,7 @@
 
  **********************************************************************}
 
-{$MODE FPC} { fsck Delphi mode }
+{$MODE FPC}
 {$INLINE ON}
 {$IFNDEF FPC_DOTTEDUNITS}
 unit tinygl;
