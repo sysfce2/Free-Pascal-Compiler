@@ -100,10 +100,37 @@ uses inifiles, testdecorator;
 {$ENDIF FPC_DOTTEDUNITS}
 
 const
+  ArgHelp = 'help';
+  ArgList = 'list';
+  ArgAll = 'all';
+  ArgSuite = 'suite';
+  ArgFormat = 'format';
+  ArgSkipTiming = 'skiptiming';
+  ArgSparse = 'sparse';
+  ArgNoAddresses = 'no-addresses';
+  ArgStyleSheet = 'stylesheet';
+  ArgProgress = 'progress';
+  ArgStatus = 'status';
+  ArgNoExitCode = 'no-exitcode';
+  ArgFile = 'file';
+
+const
   ShortOpts = 'alhpsyrnux';
-  DefaultLongOpts: array[1..13] of string =
-     ('all', 'list', 'progress', 'help', 'skiptiming',
-      'suite:', 'format:', 'file:', 'stylesheet:','sparse','no-addresses','status','no-exitcode');
+  DefaultLongOpts: array[1..13] of string = (
+    ArgHelp,
+    ArgList,
+    ArgAll,
+    ArgSuite+':', // requires value
+    ArgFormat+':', // requires value
+    ArgSkipTiming,
+    ArgSparse,
+    ArgNoAddresses,
+    ArgStyleSheet+':', // requires value
+    ArgProgress,
+    ArgStatus,
+    ArgNoExitCode,
+    ArgFile+':' // requires value
+  );
 
 const
   DefaultsFileNameConst = 'testdefaults.ini';
@@ -341,27 +368,27 @@ begin
     writeln(Version);
     writeln;
     writeln('Commands:');
-    writeln('  -h or --help              Show help and version');
-    writeln('  -l or --list              Show a list of registered tests');
-    writeln('  -a or --all               Run all registered tests');
-    writeln('  -s or --suite=<name>      Run a test suite with the specified name, or all test suites');
-    writeln('                            of the specified class (a descendant of the TTestCase)');
+    writeln('  -h or --',ArgHelp,'              Show help and version');
+    writeln('  -l or --',ArgList,'              Show a list of registered tests');
+    writeln('  -a or --',ArgAll,'               Run all registered tests');
+    writeln('  -s or --',ArgSuite,'=<name>      Run a test suite with the specified name, or all test suites');
+    writeln(       '                            of the specified class (a descendant of the TTestCase)');
     writeln;
     writeln('Options:');
-    writeln('  --format=<FMT>            Select output format, <FMT> is one of:');
+    writeln('  --',ArgFormat,'=<FMT>            Select output format, <FMT> is one of:');
     writeln('    xml                       output as XML source (default)');
     writeln('    plain                     output as plain ASCII source');
     writeln('    plainnotiming             output as plain ASCII source, skip timings');
     writeln('    latex                     output as latex');
     writeln('    junit                     output as JUnit compatible XML source');
-    writeln('  --skiptiming              Do not output timings (useful for diffs of testruns)');
-    writeln('  -r or --sparse            Produce less output (errors/failures only)');
-    writeln('  -n or --no-addresses      Do not display address info');
-    writeln('  -y or --stylesheet=<ref>  Add stylesheet reference');
-    writeln('  -p or --progress          Show progress');
-    writeln('  -u or --status            Show status messages on stderr');
-    writeln('  -x or --no-exitcode       Do not set exit code on errors');
-    writeln('  --file=<filename>         Output results to file');
+    writeln('  --',ArgSkipTiming,'              Do not output timings (useful for diffs of testruns)');
+    writeln('  -r or --',ArgSparse,'            Produce less output (errors/failures only)');
+    writeln('  -n or --',ArgNoAddresses, '      Do not display address info');
+    writeln('  -y or --',ArgStyleSheet,'=<ref>  Add stylesheet reference');
+    writeln('  -p or --',ArgProgress,'          Show progress');
+    writeln('  -u or --',ArgStatus,'            Show status messages on stderr');
+    writeln('  -x or --',ArgNoExitCode, '       Do not set exit code on errors');
+    writeln('  --',ArgFile,'=<filename>         Output results to file');
     WriteCustomHelp;
     writeln;
     writeln('Config file:');
@@ -370,9 +397,9 @@ begin
     writeln('  All values must be located in "[',DefaultsFileParamSection,']" section, the option names specified without the "--" sign.');
     writeln('  The value of logical options indicated via "1"/"0". Example file contents:');
     writeln('    [',DefaultsFileParamSection,']');
-    writeln('    all=1');
-    writeln('    format=plain');
-    writeln('    sparse=1');
+    writeln('    ',ArgAll,'=1');
+    writeln('    ',ArgFormat,'=plain');
+    writeln('    ',ArgSparse,'=1');
     writeln('  Command line options take precedence and override the values in this file.');
 end;
 
@@ -403,25 +430,25 @@ begin
       Ini.SetBoolStringValues(true,['1','true','yes','on']);
       Ini.SetBoolStringValues(false,['0','false','no','off']);
       // Read options
-      F:=Ini.ReadString(S,'format','');
+      F:=Ini.ReadString(S,ArgFormat,'');
       if (F<>'') then
         FormatParam:=StrToFormat(F);
-      FileName:=Ini.ReadString(S,'file',FileName);
-      StyleSheet:=Ini.ReadString(S,'stylesheet',StyleSheet);
-      ShowProgress:=Ini.ReadBool(S,'progress',ShowProgress);
-      FSkipTiming:=Ini.ReadBool(S,'skiptiming',FSKipTiming);
-      FSparse:=Ini.ReadBool(S,'sparse',FSparse);
-      FSkipAddressInfo:=Ini.ReadBool(S,'no-addresses',FSkipAddressInfo);
-      NoExitCodeOnError:=Ini.ReadBool(S,'no-exitcode',FNoExitCodeOnError);
-      if Ini.ReadBool(S,'status',false) then
+      FileName:=Ini.ReadString(S,ArgFile,FileName);
+      StyleSheet:=Ini.ReadString(S,ArgStyleSheet,StyleSheet);
+      ShowProgress:=Ini.ReadBool(S,ArgProgress,ShowProgress);
+      FSkipTiming:=Ini.ReadBool(S,ArgSkipTiming,FSKipTiming);
+      FSparse:=Ini.ReadBool(S,ArgSparse,FSparse);
+      FSkipAddressInfo:=Ini.ReadBool(S,ArgNoAddresses,FSkipAddressInfo);
+      NoExitCodeOnError:=Ini.ReadBool(S,ArgNoExitCode,FNoExitCodeOnError);
+      if Ini.ReadBool(S,ArgStatus,false) then
         TAssert.StatusEvent:=@DoStatus;
       // Determine runmode
-      FSuite:=Ini.ReadString(S,'suite','');
+      FSuite:=Ini.ReadString(S,ArgSuite,'');
       if (FSuite<>'') then
         FRunMode:=rmSuite
-      else if Ini.ReadBool(S,'all', false) then
+      else if Ini.ReadBool(S,ArgAll, false) then
         FRunMode:=rmAll
-      else if Ini.ReadBool(S,'list',False) then
+      else if Ini.ReadBool(S,ArgList,False) then
         FRunMode:=rmList;
     finally
       Ini.Free;
@@ -433,41 +460,41 @@ Function TTestRunner.ParseOptions : Boolean;
 
 begin
   Result:=True;
-  if HasOption('h', 'help') or ((ParamCount = 0) and (FRunMode=rmUnknown)) then
+  if HasOption('h', ArgHelp) or ((ParamCount = 0) and (FRunMode=rmUnknown)) then
     begin
     Usage;
-    if not HasOption('h','help') then
+    if not HasOption('h',ArgHelp) then
       ExitCode:=1;
     Exit(False);
     end;
   //get the format parameter
-  if HasOption('format') then
-    FormatParam:=StrToFormat(GetOptionValue('format'));
-  if HasOption('file') then
-    FileName:=GetOptionValue('file');
-  if HasOption('y','stylesheet') then
-    StyleSheet:=GetOptionValue('y','stylesheet');
-  if HasOption('p', 'progress') then
+  if HasOption(ArgFormat) then
+    FormatParam:=StrToFormat(GetOptionValue(ArgFormat));
+  if HasOption(ArgFile) then
+    FileName:=GetOptionValue(ArgFile);
+  if HasOption('y',ArgStyleSheet) then
+    StyleSheet:=GetOptionValue('y',ArgStyleSheet);
+  if HasOption('p', ArgProgress) then
     ShowProgress:=True;
-  if HasOption('skiptiming') then
+  if HasOption(ArgSkipTiming) then
     FSkipTiming:=True;
-  if HasOption('r','sparse') then
+  if HasOption('r',ArgSparse) then
     FSparse:=True;
-  If HasOption('n','no-addresses') then
+  If HasOption('n',ArgNoAddresses) then
     FSkipAddressInfo:=True;
-  if HasOption('x','no-exitcode') then
+  if HasOption('x',ArgNoExitCode) then
     NoExitCodeOnError:=True;
-  If HasOption('u','status') then
+  If HasOption('u',ArgStatus) then
     TAssert.StatusEvent:=@DoStatus;
   // Determine runmode
-  if HasOption('s','suite') then
+  if HasOption('s',ArgSuite) then
     begin
-    FSuite:=GetOptionValue('s','suite');
+    FSuite:=GetOptionValue('s',ArgSuite);
     FRunMode:=rmSuite;
     end
-  else If HasOption('a','all') then
+  else If HasOption('a',ArgAll) then
     FRunMode:=rmAll
-  else if HasOption('l','list') then
+  else if HasOption('l',ArgList) then
     FRunMode:=rmList;
 end;
 
