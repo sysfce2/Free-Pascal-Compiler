@@ -399,6 +399,7 @@ begin
     begin
     Ini:=TMemIniFile.Create(FN);
     try
+      Ini.Options:=Ini.Options+[ifoStripQuotes];
       Ini.SetBoolStringValues(true,['1','true','yes','on']);
       Ini.SetBoolStringValues(false,['0','false','no','off']);
       // Read options
