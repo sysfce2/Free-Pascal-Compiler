@@ -133,6 +133,13 @@ const
   );
 
 const
+  ValXML = 'xml';
+  ValPlain = 'plain';
+  ValPlainNoTiming = 'plainnotiming';
+  ValLatex = 'latex';
+  ValJUnit = 'junit';
+
+const
   DefaultsFileNameConst = 'testdefaults.ini';
   DefaultsFileNameEnvVar = 'FPCUNITCONFIG';
   DefaultsFileParamSection = 'defaults';
@@ -284,14 +291,13 @@ begin
 end;
 
 class function TTestRunner.StrToFormat(const S: String): TFormat;
-
 begin
   Case lowercase(S) of
-    'latex': Result:=fLatex;
-    'plain': Result:=fPlain;
-    'plainnotiming': Result:=fPlainNoTiming;
-    'xml': Result:=fXML;
-    'junit': Result:=fJUnit;
+    ValXML:           Result := fXML;
+    ValPlain:         Result := fPlain;
+    ValPlainNoTiming: Result := fPlainNoTiming;
+    ValLatex:         Result := fLatex;
+    ValJUnit:         Result := fJUnit;
   else
     Raise EConvertError.CreateFmt('Not a valid output format : "%s"',[S]);
   end;
@@ -376,11 +382,11 @@ begin
     writeln;
     writeln('Options:');
     writeln('  --',ArgFormat,'=<FMT>            Select output format, <FMT> is one of:');
-    writeln('    xml                       output as XML source (default)');
-    writeln('    plain                     output as plain ASCII source');
-    writeln('    plainnotiming             output as plain ASCII source, skip timings');
-    writeln('    latex                     output as latex');
-    writeln('    junit                     output as JUnit compatible XML source');
+    writeln('    ',ValXML,'                       output as XML source (default)');
+    writeln('    ',ValPlain,'                     output as plain ASCII source');
+    writeln('    ',ValPlainNoTiming,'             output as plain ASCII source, skip timings');
+    writeln('    ',ValLatex,'                     output as latex');
+    writeln('    ',ValJUnit,'                     output as JUnit compatible XML source');
     writeln('  --',ArgSkipTiming,'              Do not output timings (useful for diffs of testruns)');
     writeln('  -r or --',ArgSparse,'            Produce less output (errors/failures only)');
     writeln('  -n or --',ArgNoAddresses, '      Do not display address info');
@@ -398,7 +404,7 @@ begin
     writeln('  The value of logical options indicated via "1"/"0". Example file contents:');
     writeln('    [',DefaultsFileParamSection,']');
     writeln('    ',ArgAll,'=1');
-    writeln('    ',ArgFormat,'=plain');
+    writeln('    ',ArgFormat,'=',ValPlain);
     writeln('    ',ArgSparse,'=1');
     writeln('  Command line options take precedence and override the values in this file.');
 end;
