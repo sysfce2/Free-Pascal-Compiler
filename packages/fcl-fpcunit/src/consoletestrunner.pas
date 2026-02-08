@@ -413,6 +413,8 @@ begin
       FSparse:=Ini.ReadBool(S,'sparse',FSparse);
       FSkipAddressInfo:=Ini.ReadBool(S,'no-addresses',FSkipAddressInfo);
       NoExitCodeOnError:=Ini.ReadBool(S,'no-exitcode',FNoExitCodeOnError);
+      if Ini.ReadBool(S,'status',false) then
+        TAssert.StatusEvent:=@DoStatus;
       // Determine runmode
       FSuite:=Ini.ReadString(S,'suite','');
       if (FSuite<>'') then
