@@ -122,6 +122,10 @@ syscall sysvbase TinyGLBase 4498;
 function TGLGetContextVersion(GLContext: PGLContext): DWord;
 syscall sysvbase TinyGLBase 4504;
 
+{ Free Pascal specific function that allows an inline taglist }
+function GLAInitializeContextTags(context: PGLContext; const tags: array of longword): longbool;
+
+
 function InitTinyGLLibrary : boolean;
 
 implementation
@@ -130,6 +134,11 @@ const
   { Change VERSION and LIBVERSION to proper values }
   VERSION : string[2] = '50';
   LIBVERSION : longword = 50;
+
+function GLAInitializeContextTags(context: PGLContext; const tags: array of longword): longbool;
+begin
+  GLAInitializeContextTags:=GLAInitializeContext(context, @tags) > 0;
+end;
 
 function InitTinyGLLibrary : boolean;
 begin
