@@ -435,19 +435,6 @@ begin
       Ini.Options:=Ini.Options+[ifoStripQuotes];
       Ini.SetBoolStringValues(true,['1','true','yes','on']);
       Ini.SetBoolStringValues(false,['0','false','no','off']);
-      // Read options
-      F:=Ini.ReadString(S,ArgFormat,'');
-      if (F<>'') then
-        FormatParam:=StrToFormat(F);
-      FileName:=Ini.ReadString(S,ArgFile,FileName);
-      StyleSheet:=Ini.ReadString(S,ArgStyleSheet,StyleSheet);
-      ShowProgress:=Ini.ReadBool(S,ArgProgress,ShowProgress);
-      FSkipTiming:=Ini.ReadBool(S,ArgSkipTiming,FSKipTiming);
-      FSparse:=Ini.ReadBool(S,ArgSparse,FSparse);
-      FSkipAddressInfo:=Ini.ReadBool(S,ArgNoAddresses,FSkipAddressInfo);
-      NoExitCodeOnError:=Ini.ReadBool(S,ArgNoExitCode,FNoExitCodeOnError);
-      if Ini.ReadBool(S,ArgStatus,false) then
-        TAssert.StatusEvent:=@DoStatus;
       // Determine runmode
       FSuite:=Ini.ReadString(S,ArgSuite,'');
       if (FSuite<>'') then
@@ -456,6 +443,19 @@ begin
         FRunMode:=rmAll
       else if Ini.ReadBool(S,ArgList,False) then
         FRunMode:=rmList;
+      // Other options
+      F:=Ini.ReadString(S,ArgFormat,'');
+      if (F<>'') then
+        FormatParam:=StrToFormat(F);
+      FSkipTiming:=Ini.ReadBool(S,ArgSkipTiming,FSKipTiming);
+      FSparse:=Ini.ReadBool(S,ArgSparse,FSparse);
+      FSkipAddressInfo:=Ini.ReadBool(S,ArgNoAddresses,FSkipAddressInfo);
+      StyleSheet:=Ini.ReadString(S,ArgStyleSheet,StyleSheet);
+      ShowProgress:=Ini.ReadBool(S,ArgProgress,ShowProgress);
+      if Ini.ReadBool(S,ArgStatus,false) then
+        TAssert.StatusEvent:=@DoStatus;
+      NoExitCodeOnError:=Ini.ReadBool(S,ArgNoExitCode,FNoExitCodeOnError);
+      FileName:=Ini.ReadString(S,ArgFile,FileName);
     finally
       Ini.Free;
     end;
@@ -466,6 +466,7 @@ Function TTestRunner.ParseOptions : Boolean;
 
 begin
   Result:=True;
+  // Maybe show usage
   if HasOption('h', ArgHelp) or ((ParamCount = 0) and (FRunMode=rmUnknown)) then
     begin
     Usage;
@@ -473,25 +474,6 @@ begin
       ExitCode:=1;
     Exit(False);
     end;
-  //get the format parameter
-  if HasOption(ArgFormat) then
-    FormatParam:=StrToFormat(GetOptionValue(ArgFormat));
-  if HasOption(ArgFile) then
-    FileName:=GetOptionValue(ArgFile);
-  if HasOption('y',ArgStyleSheet) then
-    StyleSheet:=GetOptionValue('y',ArgStyleSheet);
-  if HasOption('p', ArgProgress) then
-    ShowProgress:=True;
-  if HasOption(ArgSkipTiming) then
-    FSkipTiming:=True;
-  if HasOption('r',ArgSparse) then
-    FSparse:=True;
-  If HasOption('n',ArgNoAddresses) then
-    FSkipAddressInfo:=True;
-  if HasOption('x',ArgNoExitCode) then
-    NoExitCodeOnError:=True;
-  If HasOption('u',ArgStatus) then
-    TAssert.StatusEvent:=@DoStatus;
   // Determine runmode
   if HasOption('s',ArgSuite) then
     begin
@@ -502,6 +484,25 @@ begin
     FRunMode:=rmAll
   else if HasOption('l',ArgList) then
     FRunMode:=rmList;
+  // Other options
+  if HasOption(ArgFormat) then
+    FormatParam:=StrToFormat(GetOptionValue(ArgFormat));
+  if HasOption(ArgSkipTiming) then
+    FSkipTiming:=True;
+  if HasOption('r',ArgSparse) then
+    FSparse:=True;
+  If HasOption('n',ArgNoAddresses) then
+    FSkipAddressInfo:=True;
+  if HasOption('y',ArgStyleSheet) then
+    StyleSheet:=GetOptionValue('y',ArgStyleSheet);
+  if HasOption('p', ArgProgress) then
+    ShowProgress:=True;
+  If HasOption('u',ArgStatus) then
+    TAssert.StatusEvent:=@DoStatus;
+  if HasOption('x',ArgNoExitCode) then
+    NoExitCodeOnError:=True;
+  if HasOption(ArgFile) then
+    FileName:=GetOptionValue(ArgFile);
 end;
 
 procedure TTestRunner.ExtendXmlDocument(Doc: TXMLDocument);
