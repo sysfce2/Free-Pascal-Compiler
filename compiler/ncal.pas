@@ -5629,6 +5629,7 @@ implementation
 
         { we made it! }
         result:=ctypeconvnode.create_internal(tassignmentnode(resassign).right.getcopy,hp2.resultdef);
+        node_reset_flags(result,[],[tnf_pass1_done]);
         firstpass(result);
       end;
 
@@ -5750,7 +5751,6 @@ implementation
 
         typecheckpass(tnode(inlineblock));
         doinlinesimplify(tnode(inlineblock));
-        node_reset_flags(tnode(inlineblock),[],[tnf_pass1_done]);
         firstpass(tnode(inlineblock));
         result:=inlineblock;
 
@@ -5772,7 +5772,6 @@ implementation
             inlineblock.free;
             inlineblock := nil;
             result:=n;
-            node_reset_flags(result,[],[tnf_pass1_done]);
           end;
 
 {$ifdef DEBUGINLINE}
