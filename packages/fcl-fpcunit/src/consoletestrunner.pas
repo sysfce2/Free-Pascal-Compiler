@@ -67,7 +67,7 @@ type
     procedure DoStatus(const msg: string);
   protected
     Class function StrToFormat(const S: String): TFormat;
-    function DefaultsFileName: String;
+    function DefaultsFileName: String; virtual;
     procedure RunSuite; virtual;
     procedure ShowTestList; virtual;
     procedure ReadDefaults; virtual;
