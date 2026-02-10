@@ -113,10 +113,11 @@ const
   ArgStatus = 'status';
   ArgNoExitCode = 'no-exitcode';
   ArgFile = 'file';
+  ArgNoConfig = 'no-config';
 
 const
   ShortOpts = 'alhpsyrnux';
-  DefaultLongOpts: array[1..13] of string = (
+  DefaultLongOpts: array[1..14] of string = (
     ArgHelp,
     ArgList,
     ArgAll,
@@ -129,7 +130,8 @@ const
     ArgProgress,
     ArgStatus,
     ArgNoExitCode,
-    ArgFile+':' // requires value
+    ArgFile+':', // requires value
+    ArgNoConfig
   );
 
 const
@@ -395,9 +397,10 @@ begin
     writeln('  -u or --',ArgStatus,'            Show status messages on stderr');
     writeln('  -x or --',ArgNoExitCode, '       Do not set exit code on errors');
     writeln('  --',ArgFile,'=<filename>         Output results to file');
+    writeln('  --',ArgNoConfig, '               Do not read the configuration file');
     WriteCustomHelp;
     writeln;
-    writeln('Config file:');
+    writeln('Configuration file:');
     writeln('  Defaults for long options can be specified in the "',DefaultsFileNameConst,'" file in the executable folder.');
     writeln('  The path to this file can be overridden by the environment variable "',DefaultsFileNameEnvVar,'".');
     writeln('  All values must be located in "[',DefaultsFileParamSection,']" section, the option names specified without the "--" sign.');
@@ -435,7 +438,7 @@ begin
       Ini.Options:=Ini.Options+[ifoStripQuotes];
       Ini.SetBoolStringValues(true,['1','true','yes','on']);
       Ini.SetBoolStringValues(false,['0','false','no','off']);
-      // Determine runmode
+      // Determine runmode (option ArgHelp by default, not required to read)
       FSuite:=Ini.ReadString(S,ArgSuite,'');
       if (FSuite<>'') then
         FRunMode:=rmSuite
@@ -456,6 +459,7 @@ begin
         TAssert.StatusEvent:=@DoStatus;
       NoExitCodeOnError:=Ini.ReadBool(S,ArgNoExitCode,FNoExitCodeOnError);
       FileName:=Ini.ReadString(S,ArgFile,FileName);
+      // (there is no point in reading the ArgNoConfig option here)
     finally
       Ini.Free;
     end;
@@ -592,7 +596,8 @@ begin
     Writeln(S);
     Exit;
     end;
-  ReadDefaults;
+  if not HasOption(ArgNoConfig) then
+    ReadDefaults;
   if Not ParseOptions then
     exit;
   //get a list of all registered tests
