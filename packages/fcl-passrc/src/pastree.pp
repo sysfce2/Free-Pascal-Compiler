@@ -1168,8 +1168,8 @@ type
     procedure FreeChildren(Prepare: boolean); override;
     function ElementTypeName: TPasTreeString; override;
     function TypeName: TPasTreeString; override;
-    function GetDeclaration(full: Boolean): TPasTreeString; override; overload;
-    function GetDeclaration(full, AddArgs, AddModifiers, AddParent: Boolean): TPasTreeString; virtual; overload;
+    function GetDeclaration(full: Boolean): TPasTreeString; overload; override;
+    function GetDeclaration(full, AddArgs, AddModifiers, AddParent: Boolean): TPasTreeString; overload; virtual;
     procedure GetModifiers(List: TStrings);
     procedure ForEachCall(const aMethodCall: TOnForEachPasElement;
       const Arg: Pointer); override;
