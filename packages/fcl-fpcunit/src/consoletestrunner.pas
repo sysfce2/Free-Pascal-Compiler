@@ -126,7 +126,8 @@ const
     'y'+ // ArgStyleSheet
     'p'+ // ArgProgress
     'u'+ // ArgStatus
-    'x'; // ArgNoExitCode
+    'x'+ // ArgNoExitCode
+    'f'; // ArgFile
   DefaultLongOpts: array[1..14] of string = (
     ArgHelp,
     ArgList,
@@ -406,7 +407,7 @@ begin
     writeln('  -p or --',ArgProgress,'          Show progress');
     writeln('  -u or --',ArgStatus,'            Show status messages on stderr');
     writeln('  -x or --',ArgNoExitCode, '       Do not set exit code on errors');
-    writeln('  --',ArgFile,'=<filename>         Output results to file');
+    writeln('  -f or --',ArgFile,'=<filename>   Output results to file');
     writeln('  --',ArgNoConfig, '               Do not read the configuration file');
     WriteCustomHelp;
     writeln;
@@ -515,8 +516,8 @@ begin
     TAssert.StatusEvent:=@DoStatus;
   if HasOption('x',ArgNoExitCode) then
     NoExitCodeOnError:=True;
-  if HasOption(ArgFile) then
-    FileName:=GetOptionValue(ArgFile);
+  if HasOption('f',ArgFile) then
+    FileName:=GetOptionValue('f',ArgFile);
 end;
 
 procedure TTestRunner.ExtendXmlDocument(Doc: TXMLDocument);
