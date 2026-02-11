@@ -5772,6 +5772,7 @@ implementation
             inlineblock.free;
             inlineblock := nil;
             result:=n;
+            node_reset_flags(result,[],[tnf_pass1_done]);
           end;
 
 {$ifdef DEBUGINLINE}
