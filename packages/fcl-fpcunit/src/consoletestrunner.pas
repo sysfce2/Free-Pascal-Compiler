@@ -128,7 +128,8 @@ const
     'p'+ // ArgProgress
     'u'+ // ArgStatus
     'x'+ // ArgNoExitCode
-    'f'; // ArgFile
+    'f'+ // ArgFile
+    'n'; // ArgNoConfig
   DefaultLongOpts: array[1..14] of string = (
     ArgHelp,
     ArgList,
@@ -409,7 +410,7 @@ begin
     writeln('  -u or --',ArgStatus,'            Show status messages on stderr');
     writeln('  -x or --',ArgNoExitCode, '       Do not set exit code on errors');
     writeln('  -f or --',ArgFile,'=<filename>   Output results to file');
-    writeln('  --',ArgNoConfig, '               Do not read the configuration file');
+    writeln('  -n or --',ArgNoConfig, '         Do not read the configuration file');
     WriteCustomHelp;
     writeln;
     writeln('Configuration file:');
@@ -608,7 +609,7 @@ begin
     Writeln(S);
     Exit;
     end;
-  if not HasOption(ArgNoConfig) then
+  if not HasOption('n',ArgNoConfig) then
     ReadDefaults;
   if Not ParseOptions then
     exit;
