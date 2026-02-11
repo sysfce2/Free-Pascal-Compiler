@@ -122,7 +122,7 @@ const
     'a'+ // ArgAll
     's'+ // ArgSuite
     't'+ // ArgSkipTiming
-    'r'+ // ArgSparse
+    'q'+ // ArgSparse
     'n'+ // ArgNoAddresses
     'y'+ // ArgStyleSheet
     'p'+ // ArgProgress
@@ -402,7 +402,7 @@ begin
     writeln('    ',ValLatex,'                     output as latex');
     writeln('    ',ValJUnit,'                     output as JUnit compatible XML source');
     writeln('  -t or --',ArgSkipTiming,'        Do not output timings (useful for diffs of test runs)');
-    writeln('  -r or --',ArgSparse,'            Produce less output (errors/failures only)');
+    writeln('  -q or --',ArgSparse,'            Produce less output (errors/failures only)');
     writeln('  -n or --',ArgNoAddresses, '      Do not display address info');
     writeln('  -y or --',ArgStyleSheet,'=<ref>  Add stylesheet reference');
     writeln('  -p or --',ArgProgress,'          Show progress');
@@ -505,7 +505,7 @@ begin
     FormatParam:=StrToFormat(GetOptionValue(ArgFormat));
   if HasOption('t',ArgSkipTiming) then
     FSkipTiming:=True;
-  if HasOption('r',ArgSparse) then
+  if HasOption('q',ArgSparse) then
     FSparse:=True;
   If HasOption('n',ArgNoAddresses) then
     FSkipAddressInfo:=True;
