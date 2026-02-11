@@ -116,7 +116,17 @@ const
   ArgNoConfig = 'no-config';
 
 const
-  ShortOpts = 'alhpsyrnux';
+  ShortOpts =
+    'h'+ // ArgHelp
+    'l'+ // ArgList
+    'a'+ // ArgAll
+    's'+ // ArgSuite
+    'r'+ // ArgSparse
+    'n'+ // ArgNoAddresses
+    'y'+ // ArgStyleSheet
+    'p'+ // ArgProgress
+    'u'+ // ArgStatus
+    'x'; // ArgNoExitCode
   DefaultLongOpts: array[1..14] of string = (
     ArgHelp,
     ArgList,
