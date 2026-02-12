@@ -120,15 +120,15 @@ const
     'h'+ // ArgHelp
     'l'+ // ArgList
     'a'+ // ArgAll
-    's'+ // ArgSuite
+    's:'+ // ArgSuite (requires value)
     't'+ // ArgSkipTiming
     'q'+ // ArgSparse
     'd'+ // ArgNoAddresses
-    'y'+ // ArgStyleSheet
+    'y:'+ // ArgStyleSheet (requires value)
     'p'+ // ArgProgress
     'u'+ // ArgStatus
     'x'+ // ArgNoExitCode
-    'f'+ // ArgFile
+    'f:'+ // ArgFile (requires value)
     'n'; // ArgNoConfig
   DefaultLongOpts: array[1..14] of string = (
     ArgHelp,
