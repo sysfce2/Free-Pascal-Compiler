@@ -128,7 +128,7 @@ implementation
     uses
        sysutils,
        { common }
-       cutils, cmsgs,
+       cutils, cmsgs, cdynset,
        { global }
        globtype,tokens,verbose,comphook,constexp,
        systems,cpubase,aasmbase,aasmtai,
@@ -1242,7 +1242,7 @@ implementation
              for i:=0 to dfabuilder.nodemap.count-1 do
                begin
                  UserCode:=GetUserCode();
-                 if DFASetIn(UserCode.optinfo^.life,i) then
+                 if DynSetIn(UserCode.optinfo^.life,i) then
                    begin
                      { do not warn for certain parameters: }
                      if not((tnode(dfabuilder.nodemap[i]).nodetype=loadn) and (tloadnode(dfabuilder.nodemap[i]).symtableentry.typ=paravarsym) and
