@@ -449,8 +449,8 @@ begin
     Ini:=TMemIniFile.Create(FN);
     try
       Ini.Options:=Ini.Options+[ifoStripQuotes];
-      Ini.SetBoolStringValues(true,['1','true','yes','on']);
-      Ini.SetBoolStringValues(false,['0','false','no','off']);
+      Ini.SetBoolStringValues(true,['1','true','y','yes','on']);
+      Ini.SetBoolStringValues(false,['0','false','n','no','off']);
       // Determine runmode (option ArgHelp by default, not required to read)
       FSuite:=Ini.ReadString(S,ArgSuite,'');
       if (FSuite<>'') then
