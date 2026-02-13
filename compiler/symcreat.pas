@@ -160,7 +160,7 @@ implementation
       sstate.old_filepos:=current_filepos;
       sstate.old_token:=token;
       sstate.old_c:=c;
-      sstate.old_orgpattern:=orgpattern;
+      sstate.old_orgpattern:=current_scanner.orgpattern;
       sstate.old_modeswitches:=current_settings.modeswitches;
       sstate.old_idtoken:=idtoken;
       sstate.valid:=true;
@@ -186,8 +186,8 @@ implementation
           token:=sstate.old_token;
           current_settings.modeswitches:=sstate.old_modeswitches;
           c:=sstate.old_c;
-          orgpattern:=sstate.old_orgpattern;
-          pattern:=upper(sstate.old_orgpattern);
+          current_scanner.orgpattern:=sstate.old_orgpattern;
+          current_scanner.pattern:=upper(sstate.old_orgpattern);
           idtoken:=sstate.old_idtoken;
         end;
     end;

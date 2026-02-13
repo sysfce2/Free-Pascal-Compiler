@@ -279,7 +279,7 @@ implementation
                    def:=find_real_class_definition(tobjectdef(def),false);
                  consume(_POINT);
                  if (structstackindex>=0) and
-                    (tabstractrecorddef(currentstructstack[structstackindex]).objname^=pattern) then
+                    (tabstractrecorddef(currentstructstack[structstackindex]).objname^=current_scanner.pattern) then
                    begin
                      def:=tdef(currentstructstack[structstackindex]);
                      dec(structstackindex);
@@ -327,7 +327,7 @@ implementation
          structdefstack:=nil;
          while assigned(structdef) and (structdef.typ in [objectdef,recorddef]) do
            begin
-             if (tabstractrecorddef(structdef).objname^=pattern) then
+             if (tabstractrecorddef(structdef).objname^=current_scanner.pattern) then
                begin
                  consume(_ID);
                  def:=structdef;
@@ -365,8 +365,8 @@ implementation
          srsymtable:=nil;
          is_specialize:=false;
          is_unit_specific:=false;
-         s:=pattern;
-         sorg:=orgpattern;
+         s:=current_scanner.pattern;
+         sorg:=current_scanner.orgpattern;
          pos:=current_tokenpos;
          { use of current parsed object:
            classes, objects, records can be used also in themself }
@@ -377,8 +377,8 @@ implementation
            begin
              consume(_ID);
              is_specialize:=true;
-             s:=pattern;
-             sorg:=orgpattern;
+             s:=current_scanner.pattern;
+             sorg:=current_scanner.orgpattern;
              pos:=current_tokenpos;
            end;
          { Use the special searchsym_type that search only types }
@@ -1158,7 +1158,7 @@ implementation
 
          reset_typesym;
 
-         if (token=_ID) and (pattern='ALIGN') then
+         if (token=_ID) and (current_scanner.pattern='ALIGN') then
            begin
              consume(_ID);
              alignment:=get_intconst.svalue;
@@ -1877,14 +1877,14 @@ implementation
                     and get the member owner instead of just created enumdef }
                   if not assigned(aktenumdef) then
                     begin
-                      if not searchsym(pattern,sym,st) then
+                      if not searchsym(current_scanner.pattern,sym,st) then
                         internalerror(202504121)
                       else if sym.typ=enumsym then
                         aktenumdef:=tenumsym(sym).definition
                       else
                         internalerror(201101021);
                     end;
-                  s:=orgpattern;
+                  s:=current_scanner.orgpattern;
                   defpos:=current_tokenpos;
                   consume(_ID);
                   { only allow assigning of specific numbers under fpc mode }

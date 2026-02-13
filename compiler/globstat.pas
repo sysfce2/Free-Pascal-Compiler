@@ -153,8 +153,16 @@ var
 
       { save scanner state }
       oldc:=c;
-      oldpattern:=pattern;
-      oldorgpattern:=orgpattern;
+      if assigned(current_scanner) then
+        begin
+          oldpattern:=current_scanner.pattern;
+          oldorgpattern:=current_scanner.orgpattern;
+        end
+      else
+        begin
+          oldpattern:='';
+          oldorgpattern:='';
+        end;
       oldtoken:=token;
       oldidtoken:=idtoken;
       old_block_type:=block_type;
@@ -193,8 +201,11 @@ var
     begin
       { restore scanner }
       c:=oldc;
-      pattern:=oldpattern;
-      orgpattern:=oldorgpattern;
+      if assigned(current_scanner) then
+        begin
+          current_scanner.pattern:=oldpattern;
+          current_scanner.orgpattern:=oldorgpattern;
+        end;
       token:=oldtoken;
       idtoken:=oldidtoken;
       current_tokenpos:=oldtokenpos;

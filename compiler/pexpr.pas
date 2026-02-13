@@ -325,12 +325,12 @@ implementation
                   else
                     begin
                       { non local exit ? }
-                      if current_procinfo.procdef.procsym.name<>pattern then
+                      if current_procinfo.procdef.procsym.name<>current_scanner.pattern then
                         begin
                           exit_procinfo:=current_procinfo.parent;
                           while assigned(exit_procinfo) do
                             begin
-                              if exit_procinfo.procdef.procsym.name=pattern then
+                              if exit_procinfo.procdef.procsym.name=current_scanner.pattern then
                                 break;
                               exit_procinfo:=exit_procinfo.parent;
                             end;
@@ -387,7 +387,7 @@ implementation
                 statement_syssym:=cbreaknode.create
               else
                 begin
-                  Message1(sym_e_id_not_found, orgpattern);
+                  Message1(sym_e_id_not_found, current_scanner.orgpattern);
                   statement_syssym:=cerrornode.create;
                 end;
             end;
@@ -398,7 +398,7 @@ implementation
                 statement_syssym:=ccontinuenode.create
               else
                 begin
-                  Message1(sym_e_id_not_found, orgpattern);
+                  Message1(sym_e_id_not_found, current_scanner.orgpattern);
                   statement_syssym:=cerrornode.create;
                 end;
             end;
@@ -527,7 +527,7 @@ implementation
                 end
               else
                 begin
-                  Message1(sym_e_id_not_found, orgpattern);
+                  Message1(sym_e_id_not_found, current_scanner.orgpattern);
                   statement_syssym:=cerrornode.create;
                 end;
             end;
@@ -798,7 +798,7 @@ implementation
                 end
               else
                 begin
-                  Message1(sym_e_id_not_found, orgpattern);
+                  Message1(sym_e_id_not_found, current_scanner.orgpattern);
                   statement_syssym:=cerrornode.create;
                 end;
             end;
@@ -1462,9 +1462,9 @@ implementation
       begin
          if sym=nil then
            begin
-              { pattern is still valid unless
+              { current_scanner.pattern is still valid unless
               there is another ID just after the ID of sym }
-              Message1(sym_e_id_no_member,orgpattern);
+              Message1(sym_e_id_no_member,current_scanner.orgpattern);
               p1.free;
               p1:=cerrornode.create;
               { try to clean up }
@@ -1672,7 +1672,7 @@ implementation
         spezcontext:=nil;
         srsymtable:=nil;
         if not assigned(srsym) then
-          message1(sym_e_id_no_member,orgpattern)
+          message1(sym_e_id_no_member,current_scanner.orgpattern)
         else
           if not (srsym.typ in [typesym,procsym]) then
             message(type_e_type_id_expected)
@@ -1784,7 +1784,7 @@ implementation
                  else
                    isspecialize:=false;
                  { search also in inherited methods }
-                 searchsym_in_class(tobjectdef(hdef),tobjectdef(current_structdef),pattern,srsym,srsymtable,[ssf_search_helper]);
+                 searchsym_in_class(tobjectdef(hdef),tobjectdef(current_structdef),current_scanner.pattern,srsym,srsymtable,[ssf_search_helper]);
                  if isspecialize then
                    begin
                      consume(_ID);
@@ -1829,7 +1829,7 @@ implementation
                 erroroutresult:=true;
                 { TP allows also @TMenu.Load if Load is only }
                 { defined in an ancestor class               }
-                srsym:=search_struct_member(tabstractrecorddef(hdef),pattern);
+                srsym:=search_struct_member(tabstractrecorddef(hdef),current_scanner.pattern);
                 if isspecialize and assigned(srsym) then
                   begin
                     consume(_ID);
@@ -1850,7 +1850,7 @@ implementation
                         erroroutresult:=false;
                       end
                     else
-                      Message1(sym_e_id_no_member,orgpattern);
+                      Message1(sym_e_id_no_member,current_scanner.orgpattern);
                   end;
                 if erroroutresult then
                   begin
@@ -1887,7 +1887,7 @@ implementation
                   ttypenode(result).typesym:=sym;
                   { TP allows also @TMenu.Load if Load is only }
                   { defined in an ancestor class               }
-                  srsym:=search_struct_member(tobjectdef(hdef),pattern);
+                  srsym:=search_struct_member(tobjectdef(hdef),current_scanner.pattern);
                   if assigned(srsym) then
                    begin
                      check_hints(srsym,srsym.symoptions,srsym.deprecatedmsg);
@@ -1905,7 +1905,7 @@ implementation
                    end
                   else
                    begin
-                     Message1(sym_e_id_no_member,orgpattern);
+                     Message1(sym_e_id_no_member,current_scanner.orgpattern);
                      consume(_ID);
                    end;
                 end
@@ -1959,7 +1959,7 @@ implementation
           result:=crealconstnode.create(d,s64floattype)
         else
           result:=crealconstnode.create(d,pbestrealtype^);
-        val(pattern,cur,code);
+        val(current_scanner.pattern,cur,code);
         if code=0 then
           trealconstnode(result).value_currency:=cur;
       end;
@@ -2176,7 +2176,7 @@ implementation
                   def:=voidpointertype
                 else
                   def:=node.resultdef;
-              result:=search_objectpascal_helper(def,nil,pattern,srsym,srsymtable);
+              result:=search_objectpascal_helper(def,nil,current_scanner.pattern,srsym,srsymtable);
               if result then
                 begin
                   if not (srsymtable.symtabletype=objectsymtable) or
@@ -2476,12 +2476,12 @@ implementation
                      goto skippointdefcheck;
                    { only an "e" or "E" can follow an intconst with a ".", the
                      other case (another intconst) is handled by the scanner }
-                   if (token=_ID) and (pattern[1]='E') then
+                   if (token=_ID) and (current_scanner.pattern[1]='E') then
                      begin
                        haderror:=false;
-                       if length(pattern)>1 then
+                       if length(current_scanner.pattern)>1 then
                          begin
-                           expstr:=copy(pattern,2,length(pattern)-1);
+                           expstr:=copy(current_scanner.pattern,2,length(current_scanner.pattern)-1);
                            val(expstr,intval,code);
                            if code<>0 then
                              begin
@@ -2504,7 +2504,7 @@ implementation
                                consume(token);
                                if token=_INTCONST then
                                  begin
-                                   valstr:=valstr+'-'+pattern;
+                                   valstr:=valstr+'-'+current_scanner.pattern;
                                    consume(token);
                                  end
                                else
@@ -2515,7 +2515,7 @@ implementation
                                consume(token);
                                if token=_INTCONST then
                                  begin
-                                   valstr:=valstr+pattern;
+                                   valstr:=valstr+current_scanner.pattern;
                                    consume(token);
                                  end
                                else
@@ -2523,7 +2523,7 @@ implementation
                              end;
                            _INTCONST:
                              begin
-                               valstr:=valstr+pattern;
+                               valstr:=valstr+current_scanner.pattern;
                                consume(_INTCONST);
                              end;
                            else
@@ -2601,7 +2601,7 @@ implementation
                                consume(_ID)
                              else
                                begin
-                                 searchsym_in_record(structh,pattern,srsym,srsymtable);
+                                 searchsym_in_record(structh,current_scanner.pattern,srsym,srsymtable);
                                  consume(_ID);
                                  if handle_specialize_inline_specialization(srsym,false,srsymtable,spezcontext) then
                                    erroroutp1:=false;
@@ -2609,7 +2609,7 @@ implementation
                            end
                          else
                            begin
-                             searchsym_in_record(structh,pattern,srsym,srsymtable);
+                             searchsym_in_record(structh,current_scanner.pattern,srsym,srsymtable);
                              if assigned(srsym) then
                                begin
                                  old_current_filepos:=current_filepos;
@@ -2623,7 +2623,7 @@ implementation
                                end
                              else
                                begin
-                                 Message1(sym_e_id_no_member,orgpattern);
+                                 Message1(sym_e_id_no_member,current_scanner.orgpattern);
                                  { try to clean up }
                                  consume(_ID);
                                end;
@@ -2644,7 +2644,7 @@ implementation
                    begin
                      if token=_ID then
                        begin
-                         srsym:=tsym(tenumdef(p1.resultdef).symtable.Find(pattern));
+                         srsym:=tsym(tenumdef(p1.resultdef).symtable.Find(current_scanner.pattern));
                          if assigned(srsym) and (srsym.typ=enumsym) and (p1.nodetype=typen) then
                            begin
                              p1.free;
@@ -2656,7 +2656,7 @@ implementation
                            if not try_type_helper(p1,nil) then
                              begin
                                p1.free;
-                               Message1(sym_e_id_no_member,orgpattern);
+                               Message1(sym_e_id_no_member,current_scanner.orgpattern);
                                p1:=cerrornode.create;
                                consume(_ID);
                              end;
@@ -2678,7 +2678,7 @@ implementation
                                begin
                                  if p1.nodetype=typen then
                                    begin
-                                     if pattern='CREATE' then
+                                     if current_scanner.pattern='CREATE' then
                                        begin
                                          consume(_ID);
                                          p2:=parse_array_constructor(tarraydef(p1.resultdef));
@@ -2687,7 +2687,7 @@ implementation
                                        end
                                      else
                                        begin
-                                         Message2(scan_f_syn_expected,'CREATE',pattern);
+                                         Message2(scan_f_syn_expected,'CREATE',current_scanner.pattern);
                                          p1.free;
                                          p1:=cerrornode.create;
                                          consume(_ID);
@@ -2730,7 +2730,7 @@ implementation
                         begin
                           if not try_type_helper(p1,nil) then
                             begin
-                              dispatchstring:=orgpattern;
+                              dispatchstring:=current_scanner.orgpattern;
                               consume(_ID);
                               calltype:=dct_method;
                               if try_to_consume(_LKLAMMER) then
@@ -2783,7 +2783,7 @@ implementation
                                 consume(_ID)
                               else
                                 begin
-                                  searchsym_in_class(tobjectdef(structh),tobjectdef(structh),pattern,srsym,srsymtable,[ssf_search_helper]);
+                                  searchsym_in_class(tobjectdef(structh),tobjectdef(structh),current_scanner.pattern,srsym,srsymtable,[ssf_search_helper]);
                                   consume(_ID);
                                   if handle_specialize_inline_specialization(srsym,false,srsymtable,spezcontext) then
                                     erroroutp1:=false;
@@ -2791,7 +2791,7 @@ implementation
                             end
                           else
                             begin
-                              searchsym_in_class(tobjectdef(structh),tobjectdef(structh),pattern,srsym,srsymtable,[ssf_search_helper]);
+                              searchsym_in_class(tobjectdef(structh),tobjectdef(structh),current_scanner.pattern,srsym,srsymtable,[ssf_search_helper]);
                               if assigned(srsym) then
                                 begin
                                   old_current_filepos:=current_filepos;
@@ -2805,7 +2805,7 @@ implementation
                                 end
                               else
                                 begin
-                                  Message1(sym_e_id_no_member,orgpattern);
+                                  Message1(sym_e_id_no_member,current_scanner.orgpattern);
                                   { try to clean up }
                                   consume(_ID);
                                 end;
@@ -2837,7 +2837,7 @@ implementation
                                 consume(_ID)
                               else
                                 begin
-                                  searchsym_in_class(tobjectdef(structh),tobjectdef(structh),pattern,srsym,srsymtable,[ssf_search_helper]);
+                                  searchsym_in_class(tobjectdef(structh),tobjectdef(structh),current_scanner.pattern,srsym,srsymtable,[ssf_search_helper]);
                                   consume(_ID);
                                   if handle_specialize_inline_specialization(srsym,false,srsymtable,spezcontext) then
                                     erroroutp1:=false;
@@ -2845,7 +2845,7 @@ implementation
                             end
                           else
                             begin
-                              searchsym_in_class(tobjectdef(structh),tobjectdef(structh),pattern,srsym,srsymtable,[ssf_search_helper]);
+                              searchsym_in_class(tobjectdef(structh),tobjectdef(structh),current_scanner.pattern,srsym,srsymtable,[ssf_search_helper]);
                               if assigned(srsym) then
                                 begin
                                    old_current_filepos:=current_filepos;
@@ -2859,7 +2859,7 @@ implementation
                                 end
                               else
                                 begin
-                                   Message1(sym_e_id_no_member,orgpattern);
+                                   Message1(sym_e_id_no_member,current_scanner.orgpattern);
                                    { try to clean up }
                                    consume(_ID);
                                 end;
@@ -2883,7 +2883,7 @@ implementation
                           { objc's id type can be used to call any
                             Objective-C method of any Objective-C class
                             type that's currently in scope }
-                          if search_objc_method(pattern,srsym,srsymtable) then
+                          if search_objc_method(current_scanner.pattern,srsym,srsymtable) then
                             begin
                               consume(_ID);
                               do_proc_call(srsym,srsymtable,nil,
@@ -3399,8 +3399,8 @@ implementation
              end
            else
              begin
-               storedpattern:=pattern;
-               orgstoredpattern:=orgpattern;
+               storedpattern:=current_scanner.pattern;
+               orgstoredpattern:=current_scanner.orgpattern;
                { store the position of the token before consuming it }
                tokenpos:=current_filepos;
                consumeid:=true;
@@ -3431,7 +3431,7 @@ implementation
                      include(cufflags,cuf_allow_specialize);
                    if ef_check_attr_suffix in flags then
                      include(cufflags,cuf_check_attr_suffix);
-                   unit_found:=try_consume_unitsym(srsym,srsymtable,t,cufflags,isspecialize,pattern);
+                   unit_found:=try_consume_unitsym(srsym,srsymtable,t,cufflags,isspecialize,current_scanner.pattern);
                    if unit_found then
                      consumeid:=true;
                  end
@@ -3442,8 +3442,8 @@ implementation
                  end;
                if consumeid then
                  begin
-                   storedpattern:=pattern;
-                   orgstoredpattern:=orgpattern;
+                   storedpattern:=current_scanner.pattern;
+                   orgstoredpattern:=current_scanner.orgpattern;
                    { store the position of the token before consuming it }
                    tokenpos:=current_filepos;
                    consume(t);
@@ -3902,8 +3902,8 @@ implementation
                          end
                        else
                          isspecialize:=false;
-                       hs:=pattern;
-                       hsorg:=orgpattern;
+                       hs:=current_scanner.pattern;
+                       hsorg:=current_scanner.orgpattern;
                        consume(_ID);
                        anon_inherited:=false;
                        { helpers have their own ways of dealing with inherited }
@@ -4055,7 +4055,7 @@ implementation
              _INTCONST :
                begin
                  {Try first wether the value fits in an int64.}
-                 val(pattern,ic,code);
+                 val(current_scanner.pattern,ic,code);
                  if code=0 then
                    begin
                       consume(_INTCONST);
@@ -4065,7 +4065,7 @@ implementation
                  else
                    begin
                      { try qword next }
-                     val(pattern,qc,code);
+                     val(current_scanner.pattern,qc,code);
                      if code=0 then
                        begin
                           consume(_INTCONST);
@@ -4076,7 +4076,7 @@ implementation
                  if code<>0 then
                    begin
                      { finally float }
-                     val(pattern,d,code);
+                     val(current_scanner.pattern,d,code);
                      if code<>0 then
                        begin
                           Message(parser_e_invalid_integer);
@@ -4102,7 +4102,7 @@ implementation
 
              _REALNUMBER :
                begin
-                 p1:=real_const_node_from_pattern(pattern);
+                 p1:=real_const_node_from_pattern(current_scanner.pattern);
                  consume(_REALNUMBER);
                  if token=_POINT then
                    begin
@@ -4160,7 +4160,7 @@ implementation
 
              _CSTRING :
                begin
-                 p1:=cstringconstnode.createpchar(pchar(cstringpattern),length(cstringpattern),nil);
+                 p1:=cstringconstnode.createpchar(pchar(current_scanner.cstringpattern),length(current_scanner.cstringpattern),nil);
                  consume(_CSTRING);
                  if token in postfixoperator_tokens then
                    begin
@@ -4171,7 +4171,7 @@ implementation
 
              _CCHAR :
                begin
-                 p1:=cordconstnode.create(ord(pattern[1]),cansichartype,true);
+                 p1:=cordconstnode.create(ord(current_scanner.pattern[1]),cansichartype,true);
                  consume(_CCHAR);
                  if token=_POINT then
                    begin
@@ -4182,10 +4182,10 @@ implementation
 
              _CWSTRING:
                begin
-                 if getlengthwidestring(patternw)=1 then
-                   p1:=cordconstnode.create(ord(getcharwidestring(patternw,0)),cwidechartype,true)
+                 if getlengthwidestring(current_scanner.patternw)=1 then
+                   p1:=cordconstnode.create(ord(getcharwidestring(current_scanner.patternw,0)),cwidechartype,true)
                  else
-                   p1:=cstringconstnode.createunistr(patternw);
+                   p1:=cstringconstnode.createunistr(current_scanner.patternw);
                  consume(_CWSTRING);
                  if token in postfixoperator_tokens then
                    begin
@@ -4196,7 +4196,7 @@ implementation
 
              _CWCHAR:
                begin
-                 p1:=cordconstnode.create(ord(getcharwidestring(patternw,0)),cwidechartype,true);
+                 p1:=cordconstnode.create(ord(getcharwidestring(current_scanner.patternw,0)),cwidechartype,true);
                  consume(_CWCHAR);
                  if token=_POINT then
                    begin
@@ -4286,7 +4286,7 @@ implementation
                     begin
                       { ugly hack, but necessary to be able to parse }
                       { -9223372036854775808 as int64 (JM)           }
-                      pattern := '-'+pattern;
+                      current_scanner.pattern := '-'+current_scanner.pattern;
                       p1:=sub_expr(oppower,[],nil);
                       {  -1 ** 4 should be - (1 ** 4) and not
                          (-1) ** 4

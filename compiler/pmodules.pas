@@ -624,15 +624,15 @@ implementation
       begin
         consume(_USES);
         repeat
-          s:=pattern;
-          sorg:=orgpattern;
+          s:=current_scanner.pattern;
+          sorg:=current_scanner.orgpattern;
           filepos:=current_tokenpos;
           consume(_ID);
           while token=_POINT do
             begin
               consume(_POINT);
-              s:=s+'.'+pattern;
-              sorg:=sorg+'.'+orgpattern;
+              s:=s+'.'+current_scanner.pattern;
+              sorg:=sorg+'.'+current_scanner.orgpattern;
               consume(_ID);
             end;
           { support "<unit> in '<file>'" construct, but not for tp7 }
@@ -686,7 +686,7 @@ implementation
            Message1(sym_e_duplicate_id,s);
           if token=_COMMA then
            begin
-             pattern:='';
+             current_scanner.pattern:='';
              consume(_COMMA);
            end
           else
@@ -1109,9 +1109,9 @@ implementation
               if deprecatedmsg<>nil then
                 internalerror(201001221);
               if token=_CSTRING then
-                deprecatedmsg:=stringdup(cstringpattern)
+                deprecatedmsg:=stringdup(current_scanner.cstringpattern)
               else
-                deprecatedmsg:=stringdup(pattern);
+                deprecatedmsg:=stringdup(current_scanner.pattern);
               consume(token);
               include(moduleopt,mo_has_deprecated_msg);
             end;
@@ -1376,12 +1376,12 @@ type
          if curr.is_initial then
           Status.IsExe:=false;
 
-         unitname:=orgpattern;
+         unitname:=current_scanner.orgpattern;
          consume(_ID);
          while token=_POINT do
            begin
              consume(_POINT);
-             unitname:=unitname+'.'+orgpattern;
+             unitname:=unitname+'.'+current_scanner.orgpattern;
              consume(_ID);
            end;
 
@@ -1946,12 +1946,12 @@ type
          { consume _PACKAGE word }
          consume(_ID);
 
-         module_name:=orgpattern;
+         module_name:=current_scanner.orgpattern;
          consume(_ID);
          while token=_POINT do
            begin
              consume(_POINT);
-             module_name:=module_name+'.'+orgpattern;
+             module_name:=module_name+'.'+current_scanner.orgpattern;
              consume(_ID);
            end;
 
@@ -2003,12 +2003,12 @@ type
                begin
                  if token=_ID then
                    begin
-                     module_name:=orgpattern;
+                     module_name:=current_scanner.orgpattern;
                      consume(_ID);
                      while token=_POINT do
                        begin
                          consume(_POINT);
-                         module_name:=module_name+'.'+orgpattern;
+                         module_name:=module_name+'.'+current_scanner.orgpattern;
                          consume(_ID);
                        end;
                      add_package(module_name,false,true);
@@ -2049,12 +2049,12 @@ type
                begin
                  if token=_ID then
                    begin
-                     module_name:=orgpattern;
+                     module_name:=current_scanner.orgpattern;
                      consume(_ID);
                      while token=_POINT do
                        begin
                          consume(_POINT);
-                         module_name:=module_name+'.'+orgpattern;
+                         module_name:=module_name+'.'+current_scanner.orgpattern;
                          consume(_ID);
                        end;
                      hp:=AddUnit(curr,module_name);
@@ -2779,12 +2779,12 @@ type
 
       begin
         consume(_LIBRARY);
-        program_name:=orgpattern;
+        program_name:=current_scanner.orgpattern;
         consume(_ID);
         while token=_POINT do
          begin
            consume(_POINT);
-           program_name:=program_name+'.'+orgpattern;
+           program_name:=program_name+'.'+current_scanner.orgpattern;
            consume(_ID);
          end;
         curr.setmodulename(program_name);
@@ -2823,12 +2823,12 @@ type
         begin
           sc:=nil;
           consume(_PROGRAM);
-          program_name:=orgpattern;
+          program_name:=current_scanner.orgpattern;
           consume(_ID);
           while token=_POINT do
             begin
               consume(_POINT);
-              program_name:=program_name+'.'+orgpattern;
+              program_name:=program_name+'.'+current_scanner.orgpattern;
               consume(_ID);
             end;
           curr.setmodulename(program_name);
@@ -2841,13 +2841,13 @@ type
                repeat
                  if m_isolike_program_para in current_settings.modeswitches then
                    begin
-                     if (pattern<>'INPUT') and (pattern<>'OUTPUT') then
+                     if (current_scanner.pattern<>'INPUT') and (current_scanner.pattern<>'OUTPUT') then
                        begin
                          { the symtablestack is not setup here, so text must be created later on }
                          Setlength(sc,length(sc)+1);
                          with sc[high(sc)] do
                            begin
-                             name:=pattern;
+                             name:=current_scanner.pattern;
                              nr:=paramnum;
                            end;
                          inc(paramnum);

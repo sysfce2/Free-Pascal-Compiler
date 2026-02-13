@@ -93,7 +93,7 @@ implementation
            if token=_ID then
              begin
                 consume_sym_orgid(srsym,srsymtable,orgs);
-                { orgpattern is still valid here }
+                { current_scanner.orgpattern is still valid here }
                 InternalProcName:='';
                 case srsym.typ of
                   staticvarsym :

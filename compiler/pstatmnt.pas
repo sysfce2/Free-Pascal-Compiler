@@ -954,8 +954,8 @@ implementation
                      consume(_ON);
                      if token=_ID then
                        begin
-                          objname:=pattern;
-                          objrealname:=orgpattern;
+                          objname:=current_scanner.pattern;
+                          objrealname:=current_scanner.orgpattern;
                           { can't use consume_sym here, because we need already
                             to check for the colon }
                           searchsym(objname,srsym,srsymtable);
@@ -1128,15 +1128,15 @@ implementation
                 repeat
                   { it's possible to specify the modified registers }
                   if token=_CSTRING then
-                    reg:=std_regnum_search(lower(cstringpattern))
+                    reg:=std_regnum_search(lower(current_scanner.cstringpattern))
                   else if token=_CCHAR then
-                    reg:=std_regnum_search(lower(pattern))
+                    reg:=std_regnum_search(lower(current_scanner.pattern))
                   else
                     reg:=NR_NO;
                   { is_extra_reg is not exported on all architectures from cpubase }
 {$if defined(RISCV)}
                   if (reg=NR_NO) and (token=_CSTRING) then
-                    reg:=is_extra_reg(upper(cstringpattern));
+                    reg:=is_extra_reg(upper(current_scanner.cstringpattern));
 {$endif defined(RISCV)}
                   if reg<>NR_NO then
                     begin
@@ -1259,7 +1259,7 @@ implementation
           sym:=nil;
           if token=_ID then
             begin
-              if searchsym(pattern,sym,symtable) then
+              if searchsym(current_scanner.pattern,sym,symtable) then
                 begin
                   if sym.typ in [staticvarsym,localvarsym,paravarsym] then
                     begin
@@ -1367,13 +1367,13 @@ implementation
 
                         { strip leading 0's in iso mode }
                         if (([m_iso,m_extpas]*current_settings.modeswitches)<>[]) then
-                          while (length(pattern)>1) and (pattern[1]='0') do
-                            delete(pattern,1,1);
+                          while (length(current_scanner.pattern)>1) and (current_scanner.pattern[1]='0') do
+                            delete(current_scanner.pattern,1,1);
 
-                        searchsym(pattern,srsym,srsymtable);
+                        searchsym(current_scanner.pattern,srsym,srsymtable);
                         if srsym=nil then
                           begin
-                            identifier_not_found(pattern);
+                            identifier_not_found(current_scanner.pattern);
                             srsym:=generrorsym;
                             srsymtable:=nil;
                           end;
@@ -1466,13 +1466,13 @@ implementation
                result in not detecting certain kinds of syntax errors --
                see mantis #15594 }
              p:=expr(false);
-             { save the pattern here for latter usage, the label could be "000",
-               even if we read an expression, the pattern is still valid if it's really
+             { save the current_scanner.pattern here for latter usage, the label could be "000",
+               even if we read an expression, the current_scanner.pattern is still valid if it's really
                a label (FK)
                if you want to mess here, take care of
                tests/webtbs/tw3546.pp
              }
-             s:=pattern;
+             s:=current_scanner.pattern;
 
              { When a colon follows a intconst then transform it into a label }
              if (p.nodetype=ordconstn) and

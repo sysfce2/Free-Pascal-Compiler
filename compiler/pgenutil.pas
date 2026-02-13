@@ -2304,13 +2304,13 @@ uses
           if token=_ID then
             begin
               if is_const then
-                generictype:=cconstsym.create_undefined(orgpattern,cundefinedtype)
+                generictype:=cconstsym.create_undefined(current_scanner.orgpattern,cundefinedtype)
               else
-                generictype:=ctypesym.create(orgpattern,cundefinedtype);
+                generictype:=ctypesym.create(current_scanner.orgpattern,cundefinedtype);
               { type parameters need to be added as strict private }
               generictype.visibility:=vis_strictprivate;
               include(generictype.symoptions,sp_generic_para);
-              result.add(orgpattern,generictype);
+              result.add(current_scanner.orgpattern,generictype);
             end;
           consume(_ID);
           fileinfo:=current_tokenpos;

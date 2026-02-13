@@ -1709,8 +1709,8 @@ function get_next_varsym(def: tabstractrecorddef; const SymList:TFPHashObjectLis
         error := false;
         while token<>_RKLAMMER do
           begin
-            s:=pattern;
-            sorg:=orgpattern;
+            s:=current_scanner.pattern;
+            sorg:=current_scanner.orgpattern;
             consume(_ID);
             consume(_COLON);
             recsym := tsym(def.symtable.Find(s));
@@ -1904,8 +1904,8 @@ function get_next_varsym(def: tabstractrecorddef; const SymList:TFPHashObjectLis
         vmtwritten:=false;
         while token<>_RKLAMMER do
           begin
-            s:=pattern;
-            sorg:=orgpattern;
+            s:=current_scanner.pattern;
+            sorg:=current_scanner.orgpattern;
             consume(_ID);
             consume(_COLON);
             srsym:=nil;
@@ -2115,8 +2115,8 @@ function get_next_varsym(def: tabstractrecorddef; const SymList:TFPHashObjectLis
         basenode:=nil;
         while token<>_RKLAMMER do
           begin
-            s:=pattern;
-            sorg:=orgpattern;
+            s:=current_scanner.pattern;
+            sorg:=current_scanner.orgpattern;
             consume(_ID);
             consume(_COLON);
             error := false;
@@ -2270,8 +2270,8 @@ function get_next_varsym(def: tabstractrecorddef; const SymList:TFPHashObjectLis
         basenode:=nil;
         while token<>_RKLAMMER do
           begin
-            s:=pattern;
-            sorg:=orgpattern;
+            s:=current_scanner.pattern;
+            sorg:=current_scanner.orgpattern;
             consume(_ID);
             consume(_COLON);
             srsym:=nil;

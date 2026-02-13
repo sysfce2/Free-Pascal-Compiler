@@ -196,7 +196,7 @@ implementation
           begin
             if (token = _ID) then
             begin
-              if pattern='CURRENT' then
+              if current_scanner.pattern='CURRENT' then
               begin
                 if oo_has_enumerator_current in current_structdef.objectoptions then
                   message(parser_e_only_one_enumerator_current);
@@ -209,7 +209,7 @@ implementation
                   Message(parser_e_enumerator_current_is_not_valid) // property has no reader
               end
               else
-                Message1(parser_e_invalid_enumerator_identifier, pattern);
+                Message1(parser_e_invalid_enumerator_identifier, current_scanner.pattern);
               consume(token);
             end
             else

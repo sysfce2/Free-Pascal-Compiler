@@ -243,7 +243,7 @@ implementation
          had_generic:=false;
          first:=true;
          repeat
-           orgname:=orgpattern;
+           orgname:=current_scanner.orgpattern;
            filepos:=current_tokenpos;
            isgeneric:=not (m_delphi in current_settings.modeswitches) and (token=_ID) and (idtoken=_GENERIC);
            consume(_ID);
@@ -394,14 +394,14 @@ implementation
            else
              begin
                 if token=_ID then
-                  labelsym:=clabelsym.create(orgpattern)
+                  labelsym:=clabelsym.create(current_scanner.orgpattern)
                 else
                   begin
                     { strip leading 0's in iso mode }
                     if (([m_iso,m_extpas]*current_settings.modeswitches)<>[]) then
-                      while (length(pattern)>1) and (pattern[1]='0') do
-                        delete(pattern,1,1);
-                    labelsym:=clabelsym.create(pattern);
+                      while (length(current_scanner.pattern)>1) and (current_scanner.pattern[1]='0') do
+                        delete(current_scanner.pattern,1,1);
+                    labelsym:=clabelsym.create(current_scanner.pattern);
                   end;
 
                 symtablestack.top.insertsym(labelsym);
@@ -759,8 +759,8 @@ implementation
              had_generic:=not(m_delphi in current_settings.modeswitches) and try_to_consume(_GENERIC);
            isgeneric:=had_generic;
 
-           typename:=pattern;
-           orgtypename:=orgpattern;
+           typename:=current_scanner.pattern;
+           orgtypename:=current_scanner.orgpattern;
            consume(_ID);
 
            { delphi generic declaration? }
@@ -1337,7 +1337,7 @@ implementation
          old_block_type:=block_type;
          block_type:=bt_const;
          repeat
-           orgname:=orgpattern;
+           orgname:=current_scanner.orgpattern;
            filepos:=current_tokenpos;
            isgeneric:=not (m_delphi in current_settings.modeswitches) and (token=_ID) and (idtoken=_GENERIC);
            consume(_ID);

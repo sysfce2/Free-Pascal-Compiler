@@ -149,9 +149,6 @@ implementation
 
          { scanner }
          c:=#0;
-         pattern:='';
-         orgpattern:='';
-         cstringpattern:='';
          set_current_scanner(nil);
          switchesstatestackpos:=0;
 
@@ -349,40 +346,40 @@ implementation
            case token of
              _ID :
                begin
-                 preprocfile.Add(orgpattern);
+                 preprocfile.Add(current_scanner.orgpattern);
                end;
              _REALNUMBER,
              _INTCONST :
-               preprocfile.Add(pattern);
+               preprocfile.Add(current_scanner.pattern);
              _CSTRING :
                begin
                  i:=0;
-                 while (i<length(cstringpattern)) do
+                 while (i<length(current_scanner.cstringpattern)) do
                   begin
                     inc(i);
-                    if cstringpattern[i]='''' then
+                    if current_scanner.cstringpattern[i]='''' then
                      begin
-                       insert('''',cstringpattern,i);
+                       insert('''',current_scanner.cstringpattern,i);
                        inc(i);
                      end;
                   end;
-                 preprocfile.Add(''''+cstringpattern+'''');
+                 preprocfile.Add(''''+current_scanner.cstringpattern+'''');
                end;
              _CCHAR :
                begin
-                 case pattern[1] of
+                 case current_scanner.pattern[1] of
                    #39 :
-                     pattern:='''''''';
+                     current_scanner.pattern:='''''''';
                    #0..#31,
                    #128..#255 :
                      begin
-                       str(ord(pattern[1]),pattern);
-                       pattern:='#'+pattern;
+                       str(ord(current_scanner.pattern[1]),current_scanner.pattern);
+                       current_scanner.pattern:='#'+current_scanner.pattern;
                      end;
                    else
-                     pattern:=''''+pattern[1]+'''';
+                     current_scanner.pattern:=''''+current_scanner.pattern[1]+'''';
                  end;
-                 preprocfile.Add(pattern);
+                 preprocfile.Add(current_scanner.pattern);
                end;
              _EOF :
                break;

@@ -88,9 +88,9 @@ implementation
             if token=_ID then
              begin
                if assigned(astruct) then
-                 sym:=search_struct_member(astruct,pattern)
+                 sym:=search_struct_member(astruct,current_scanner.pattern)
                else
-                 searchsym(pattern,sym,srsymtable);
+                 searchsym(current_scanner.pattern,sym,srsymtable);
                if assigned(sym) then
                 begin
                   if assigned(astruct) and
@@ -110,7 +110,7 @@ implementation
                       end;
                     else
                       begin
-                        Message1(parser_e_illegal_field_or_method,orgpattern);
+                        Message1(parser_e_illegal_field_or_method,current_scanner.orgpattern);
                         def:=generrordef;
                         result:=false;
                       end;
@@ -118,7 +118,7 @@ implementation
                 end
                else
                 begin
-                  Message1(parser_e_illegal_field_or_method,orgpattern);
+                  Message1(parser_e_illegal_field_or_method,current_scanner.orgpattern);
                   def:=generrordef;
                   result:=false;
                 end;
@@ -140,9 +140,9 @@ implementation
                           st:=def.GetSymtable(gs_record);
                           if assigned(st) then
                            begin
-                             sym:=tsym(st.Find(pattern));
+                             sym:=tsym(st.Find(current_scanner.pattern));
                              if not(assigned(sym)) and is_object(def) then
-                               sym:=search_struct_member(tobjectdef(def),pattern);
+                               sym:=search_struct_member(tobjectdef(def),current_scanner.pattern);
                              if assigned(sym) then
                               begin
                                 pl.addsym(sl_subscript,sym);
@@ -151,14 +151,14 @@ implementation
                                     def:=tfieldvarsym(sym).vardef;
                                   else
                                     begin
-                                      Message1(sym_e_illegal_field,orgpattern);
+                                      Message1(sym_e_illegal_field,current_scanner.orgpattern);
                                       result:=false;
                                     end;
                                 end;
                               end
                              else
                               begin
-                                Message1(sym_e_illegal_field,orgpattern);
+                                Message1(sym_e_illegal_field,current_scanner.orgpattern);
                                 result:=false;
                               end;
                            end
@@ -381,7 +381,7 @@ implementation
               exit;
            end;
          { Generate propertysym and insert in symtablestack }
-         p:=cpropertysym.create(orgpattern);
+         p:=cpropertysym.create(current_scanner.orgpattern);
          p.visibility:=symtablestack.top.currentvisibility;
          p.default:=longint($80000000);
          if is_classproperty then
@@ -413,7 +413,7 @@ implementation
                 sc.clear;
                 repeat
                   inc(paranr);
-                  hreadparavs:=cparavarsym.create(orgpattern,10*paranr,varspez,generrordef,[]);
+                  hreadparavs:=cparavarsym.create(current_scanner.orgpattern,10*paranr,varspez,generrordef,[]);
                   p.parast.insertsym(hreadparavs);
                   sc.add(hreadparavs);
                   consume(_ID);
@@ -635,8 +635,8 @@ implementation
                        }
                        sym:=nil;
                        if (not assigned(astruct) or
-                           (search_struct_member(astruct,pattern)=nil)) and
-                          searchsym(pattern,sym,srsymtable) and
+                           (search_struct_member(astruct,current_scanner.pattern)=nil)) and
+                          searchsym(current_scanner.pattern,sym,srsymtable) and
                           (sym.typ = constsym) then
                          begin
                             addsymref(sym);
@@ -1402,11 +1402,11 @@ implementation
                                 (idtoken=_GENERIC);
                    case symtablestack.top.symtabletype of
                      localsymtable :
-                       vs:=clocalvarsym.create(orgpattern,vs_value,generrordef,[]);
+                       vs:=clocalvarsym.create(current_scanner.orgpattern,vs_value,generrordef,[]);
                      staticsymtable,
                      globalsymtable :
                        begin
-                         vs:=cstaticvarsym.create(orgpattern,vs_value,generrordef,[]);
+                         vs:=cstaticvarsym.create(current_scanner.orgpattern,vs_value,generrordef,[]);
                          if vd_threadvar in options then
                            include(vs.varoptions,vo_is_thread_var);
                        end;
@@ -1461,7 +1461,7 @@ implementation
 {$ifdef gpc_mode}
              if (m_gpc in current_settings.modeswitches) and
                 (token=_ID) and
-                (orgpattern='__asmname__') then
+                (current_scanner.orgpattern='__asmname__') then
                read_gpc_name(sc);
 {$endif}
 
@@ -1752,7 +1752,7 @@ implementation
              semicoloneaten:=false;
              sc.clear;
              repeat
-               sorg:=orgpattern;
+               sorg:=current_scanner.orgpattern;
                if token=_ID then
                  begin
                    vs:=cfieldvarsym.create(sorg,vs_value,generrordef,[]);
@@ -2017,8 +2017,8 @@ implementation
               fieldvs:=nil;
               if token=_ID then
                 begin
-                  sorg:=orgpattern;
-                  hs:=pattern;
+                  sorg:=current_scanner.orgpattern;
+                  hs:=current_scanner.pattern;
                   searchsym(hs,srsym,srsymtable);
                   if not(assigned(srsym) and (srsym.typ in [typesym,unitsym])) then
                     begin

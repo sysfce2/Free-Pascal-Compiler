@@ -329,7 +329,7 @@ implementation
           sc.clear;
           repeat
             inc(paranr);
-            vs:=cparavarsym.create(orgpattern,paranr*10,varspez,generrordef,[]);
+            vs:=cparavarsym.create(current_scanner.orgpattern,paranr*10,varspez,generrordef,[]);
             currparast.insertsym(vs);
             if assigned(vs.owner) then
              sc.add(vs)
@@ -451,7 +451,7 @@ implementation
                     if (idtoken=_LOCATION) then
                       begin
                         consume(_LOCATION);
-                        locationstr:=cstringpattern;
+                        locationstr:=current_scanner.cstringpattern;
                         consume(_CSTRING);
                       end
                     else
@@ -662,8 +662,8 @@ implementation
               end
             else
               begin
-                sp:=pattern;
-                orgsp:=orgpattern;
+                sp:=current_scanner.pattern;
+                orgsp:=current_scanner.orgpattern;
                 spnongen:=sp;
                 orgspnongen:=orgsp;
                 if firstpart and
@@ -933,11 +933,11 @@ implementation
                  Message2(parser_e_implements_no_mapping,ImplIntf.IntfDef.typename,astruct.objrealname^);
                consume(_ID);
                { Create unique name <interface>.<method> }
-               hs:=sp+'.'+pattern;
+               hs:=sp+'.'+current_scanner.pattern;
                consume(_EQ);
                if assigned(ImplIntf) and
                   (token=_ID) then
-                 ImplIntf.AddMapping(hs,pattern);
+                 ImplIntf.AddMapping(hs,current_scanner.pattern);
                consume(_ID);
                result:=true;
                exit;
@@ -1477,7 +1477,7 @@ implementation
                     end
                   else
                     begin
-                      pd.resultname:=stringdup(orgpattern);
+                      pd.resultname:=stringdup(current_scanner.orgpattern);
                       consume(_ID);
                     end;
                 end;
@@ -1491,7 +1491,7 @@ implementation
                      if po_explicitparaloc in pd.procoptions then
                       begin
                        consume(_LOCATION);
-                       locationstr:=cstringpattern;
+                       locationstr:=current_scanner.cstringpattern;
                        consume(_CSTRING);
                       end
                      else
@@ -1576,7 +1576,7 @@ implementation
                 end
               else
                 begin
-                  pd.resultname:=stringdup(orgpattern);
+                  pd.resultname:=stringdup(current_scanner.orgpattern);
                   consume(_ID);
                 end;
               { operators without result (management operators) }
@@ -1920,12 +1920,12 @@ begin
     internalerror(200304267);
   if token=_CCHAR then
     begin
-      tprocdef(pd).aliasnames.insert(target_info.Cprefix+pattern);
+      tprocdef(pd).aliasnames.insert(target_info.Cprefix+current_scanner.pattern);
       consume(_CCHAR)
     end
   else
     begin
-      tprocdef(pd).aliasnames.insert(target_info.Cprefix+cstringpattern);
+      tprocdef(pd).aliasnames.insert(target_info.Cprefix+current_scanner.cstringpattern);
       consume(_CSTRING);
     end;
   { we don't need anything else }
@@ -2014,7 +2014,7 @@ begin
     internalerror(200910250);
   if (token = _ID) then
   begin
-    if pattern='MOVENEXT' then
+    if current_scanner.pattern='MOVENEXT' then
     begin
       if oo_has_enumerator_movenext in tprocdef(pd).struct.objectoptions then
         message(parser_e_only_one_enumerator_movenext);
@@ -2029,7 +2029,7 @@ begin
         Message(parser_e_enumerator_movenext_is_not_valid)
     end
     else
-      Message1(parser_e_invalid_enumerator_identifier, pattern);
+      Message1(parser_e_invalid_enumerator_identifier, current_scanner.pattern);
     consume(token);
   end
   else
@@ -3166,7 +3166,7 @@ const
               next variable !! }
             if ((pdflags * [pd_procvar,pd_object,pd_record,pd_objcclass,pd_objcprot])=[]) and
                not(idtoken in [_PROPERTY,_GENERIC]) then
-              Message1(parser_w_unknown_proc_directive_ignored,pattern);
+              Message1(parser_w_unknown_proc_directive_ignored,current_scanner.pattern);
             exit;
          end;
 

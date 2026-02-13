@@ -148,6 +148,11 @@ interface
           lasttoken,
           nexttoken    : ttoken;
 
+          orgpattern,
+          pattern        : string;
+          cstringpattern : ansistring;
+          patternw       : tcompilerwidestring;
+
           oldlasttokenpos     : longint; { temporary saving/restoring tokenpos }
           oldcurrent_filepos,
           oldcurrent_tokenpos : tfileposinfo;
@@ -295,10 +300,6 @@ interface
     var
         { read strings }
         c              : char;
-        orgpattern,
-        pattern        : string;
-        cstringpattern : ansistring;
-        patternw       : tcompilerwidestring;
 
         { token }
         token,                        { current token being parsed }
@@ -391,12 +392,12 @@ implementation
         while low<high do
          begin
            mid:=(high+low+1) shr 1;
-           if pattern<tokeninfo^[ttoken(mid)].str then
+           if current_scanner.pattern<tokeninfo^[ttoken(mid)].str then
             high:=mid-1
            else
             low:=mid;
          end;
-        is_keyword:=(pattern=tokeninfo^[ttoken(high)].str) and
+        is_keyword:=(current_scanner.pattern=tokeninfo^[ttoken(high)].str) and
                     ((tokeninfo^[ttoken(high)].keyword*current_settings.modeswitches)<>[]);
       end;
 
@@ -3080,6 +3081,7 @@ type
         nexttoken:=NOTOKEN;
         ignoredirectives:=TFPHashList.Create;
         change_endian_for_replay:=false;
+        initwidestring(patternw);
       end;
 
 
@@ -3116,6 +3118,7 @@ type
           end;
         ignoredirectives.free;
         ignoredirectives := nil;
+        donewidestring(patternw);
       end;
 
 
@@ -6981,7 +6984,6 @@ exit_label:
 
     procedure InitScanner;
       begin
-        InitWideString(patternw);
         turbo_scannerdirectives:=TFPHashObjectList.Create;
         mac_scannerdirectives:=TFPHashObjectList.Create;
 
@@ -7024,7 +7026,6 @@ exit_label:
         turbo_scannerdirectives := nil;
         mac_scannerdirectives.Free;
         mac_scannerdirectives := nil;
-        DoneWideString(patternw);
       end;
 
 end.
