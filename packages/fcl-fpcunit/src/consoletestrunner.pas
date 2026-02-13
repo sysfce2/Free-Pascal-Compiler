@@ -429,8 +429,9 @@ Function TTestRunner.DefaultsFileName : String;
 
 begin
   Result:=GetEnvironmentVariable(DefaultsFileNameEnvVar);
-  if (Result='') then
-    Result:=Location+DefaultsFileNameConst;
+  if Result='' then
+    Result:=DefaultsFileNameConst;
+  Result:=ExpandFileName(Result,Location);
 end;
 
 procedure TTestRunner.ReadDefaults;
