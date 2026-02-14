@@ -284,12 +284,30 @@ begin
   end;
 end;
 
+
+procedure TTestBufferedFileStream_TestSetSize;
+var
+  Filename: string;
+  Stream: TStream;
+begin
+  Stream := nil;
+  Filename := ExpandFileName('~/66E9541B9C0D482BBDB98D911E6E3415.tst');
+  try
+    Stream := TBufferedFileStream.Create(Filename, fmCreate);
+    Stream.Size := 1024;
+  finally
+    Stream.Free;
+    DeleteFile(Filename);
+  end;
+end;
+
 procedure RegisterTests;
 begin
   AddSuite('TBufferedFileStreamTests', @Setup, @TearDown);
   AddTest('TestCacheRead', @TBufferedFileStream_TestCacheRead, 'TBufferedFileStreamTests');
   AddTest('TestCacheWrite', @TBufferedFileStream_TestCacheWrite, 'TBufferedFileStreamTests');
   AddTest('TestCacheSeek', @TBufferedFileStream_TestCacheSeek, 'TBufferedFileStreamTests');
+  AddTest('TestSetSize', @TTestBufferedFileStream_TestSetSize,'TBufferedFileStreamTests');
 end;
 
 end.

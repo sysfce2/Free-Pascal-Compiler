@@ -741,7 +741,7 @@ var
   pCache: PStreamCacheEntry;
 begin
   WriteDirtyPages;
-  inherited SetSize64(NewSize);
+  inherited SetSize(NewSize); // Call THandleStream.SetSize, will truncate
   FCacheStreamSize:=inherited Seek(0,soFromEnd);
   for j := 0 to Pred(FStreamCachePageMaxCount) do begin
     pCache:=FCachePages[j];
@@ -749,7 +749,6 @@ begin
       // This page is out of bounds the new file size
       // so discard it.
       FreePage(pCache,True);
-      break;
     end;
   end;
 end;
