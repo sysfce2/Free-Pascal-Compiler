@@ -22,6 +22,14 @@ unit heaptrc;
   {$define windows}
 {$endif}
 
+{$if not defined(FPUNONE) and not defined(FPUSOFT)}
+  {$define can_use_ln_in_constants} // :(
+{$endif}
+
+{$if not defined(CPUINT8) and not defined(CPUINT16)}
+  {$define can_use_int32_case} // :(
+{$endif}
+
 // Buggy and does not help: https://gitlab.com/freepascal.org/fpc/source/-/issues/39611.
 // As a workaround, you can wrap this with {$define disable_warnings := ...all of these $warns...} and sprinkle disable_warnings here and there.
 {$warn 4055 off : Conversion between ordinals and pointers is not portable}
@@ -512,28 +520,44 @@ type
   var
     pb: pByte absolute p;
   begin
+{$ifdef can_use_int32_case}
     case v of
       0 .. Ofs2 - 1:
+{$else}
+    if v < Ofs2 then
+{$endif}
         begin
           pb[0] := v;
           result := 1;
-        end;
+        end
+{$ifdef can_use_int32_case};
       Ofs2 .. Ofs3 - 1:
+{$else}
+    else if v < Ofs3 then
+{$endif}
         begin
           dec(v, Ofs2);
           pb[0] := FirstByte2 + v shr 8;
           pb[1] := byte(v);
           result := 2;
-        end;
+        end
+{$ifdef can_use_int32_case};
       Ofs3 .. Ofs4 - 1:
+{$else}
+    else if v < Ofs4 then
+{$endif}
         begin
           dec(v, Ofs3);
           pb[0] := FirstByte3 + v shr 16;
           pb[1] := byte(v shr 8);
           pb[2] := byte(v);
           result := 3;
-        end;
+        end
+{$ifdef can_use_int32_case};
       Ofs4 .. Min5 - 1:
+{$else}
+    else if v < Min5 then
+{$endif}
         begin
           dec(v, Ofs4);
           pb[0] := FirstByte4 + v shr 24;
@@ -541,7 +565,7 @@ type
           pb[2] := byte(v shr 8);
           pb[3] := byte(v);
           result := 4;
-        end;
+        end {$ifdef can_use_int32_case} ; {$endif} { actually this ; is optional even with ‘case’. }
       else
         begin
         {$if sizeof(v) <= sizeof(uint32)}
@@ -556,7 +580,9 @@ type
           unaligned(pUint32(pb + result - 4)^) := uint32(v {$ifdef endian_little} shr (8 * result - 40) {$endif});
         {$else} {$error >64 bits} {$endif}
         end;
-    end;
+{$ifdef can_use_int32_case}
+    end; { closes case .. of }
+{$endif}
   end;
 
   class function VarInt.EnZig(sv: PtrInt): PtrUint;
@@ -630,7 +656,7 @@ type
       n := VarInt.Read(packedTrace, PtrUint(delta));
       inc(packedTrace, n); dec(remaining, n);
     {$push} {$q-,r-} inc(ptrv, VarInt.DeZig(PtrUint(delta))); {$pop}
-      trace[result] := pointer(PtrUint(ptrv));
+      trace[result] := CodePointer(PtrUint(ptrv));
       inc(result);
     end;
   end;
@@ -932,11 +958,18 @@ type
     HeadTailSizes: array[0 .. 15] of uint8 = (0, 1, 2, 3, 4, 6, 8, 10, 12, 16, 20, 24, 32, 40, 48, 56);
 
     // Code asumes that HasFullUserRequestBit immediately precedes ExtraInfoIndex, i.e., they can be combined into one index.
-    HasFullUserRequestShift = 0;                                HasFullUserRequestBit = 1 shl HasFullUserRequestShift;
-    ExtraInfoIndexShift = HasFullUserRequestShift + 1;             ExtraInfoIndexBits = 1 + trunc(ln(MaxExtraInfos) / ln(2) + Eps);      ExtraInfoIndexMask = 1 shl ExtraInfoIndexBits - 1;
-    FreelistIndexMask = ExtraInfoIndexMask shl 1 or 1;
-    TailSizeIndexShift = ExtraInfoIndexShift + ExtraInfoIndexBits; TailSizeIndexBits = 1 + trunc(ln(High(HeadTailSizes)) / ln(2) + Eps); TailSizeIndexMask = 1 shl TailSizeIndexBits - 1;
-    HeadSizeIndexShift = TailSizeIndexShift + TailSizeIndexBits;   HeadSizeIndexBits = 1 + trunc(ln(High(HeadTailSizes)) / ln(2) + Eps); HeadSizeIndexMask = 1 shl HeadSizeIndexBits - 1;
+    HasFullUserRequestShift = 0;
+    HasFullUserRequestBit = 1 shl HasFullUserRequestShift;
+    ExtraInfoIndexShift = HasFullUserRequestShift + 1;
+    ExtraInfoIndexBits = {$ifdef can_use_ln_in_constants} 1 + trunc(ln(MaxExtraInfos) / ln(2) + Eps) {$else} 2 {$endif}; {$if ExtraInfoIndexBits <> 2} {$error fix the hardcoded constant} {$endif}
+    ExtraInfoIndexMask = 1 shl ExtraInfoIndexBits - 1;
+    FreelistIndexMask = ExtraInfoIndexMask shl 1 or 1; // Mask for merged ExtraInfoIndex:HasFullUserRequestBit.
+    TailSizeIndexShift = ExtraInfoIndexShift + ExtraInfoIndexBits;
+    TailSizeIndexBits = {$ifdef can_use_ln_in_constants} 1 + trunc(ln(High(HeadTailSizes)) / ln(2) + Eps) {$else} 4 {$endif}; {$if TailSizeIndexBits <> 4} {$error fix the hardcoded constant} {$endif}
+    TailSizeIndexMask = 1 shl TailSizeIndexBits - 1;
+    HeadSizeIndexShift = TailSizeIndexShift + TailSizeIndexBits;
+    HeadSizeIndexBits = {$ifdef can_use_ln_in_constants} 1 + trunc(ln(High(HeadTailSizes)) / ln(2) + Eps) {$else} 4 {$endif}; {$if HeadSizeIndexBits <> 4} {$error fix the hardcoded constant} {$endif}
+    HeadSizeIndexMask = 1 shl HeadSizeIndexBits - 1;
     ReallocatingShift = HeadSizeIndexShift + HeadSizeIndexBits; ReallocatingBit = 1 shl ReallocatingShift;
     ReportedShift = ReallocatingShift + 1;                      ReportedBit = 1 shl ReportedShift;
     UserSizeRequestShift = ReportedShift + 1;
@@ -1035,7 +1068,7 @@ type
     procedure FreeAllToFreeItems(cf: CheckFlags); // For finalization.
     function AllocateNode(info: SizeUint): pNode;
     procedure FreeNode(n: pNode; var freeBatch: PrevMgrToFreeBatch; cf: CheckFlags);
-    class function CfSkipFrames(cf: CheckFlags): SizeUint; static;
+    class function CfSkipFrames(cf: CheckFlags): SizeUint; static; inline;
 
     function DoGetMem(size: PtrUint): pointer;
     function DoFreeMem(p: pointer; size: PtrUint): PtrUint;
@@ -1331,10 +1364,23 @@ var
     freeBatch.Add(n^.userPtr - HeadTailSizes[info shr HeadSizeIndexShift and HeadSizeIndexMask] * HeadSizeUnit, cf);
   end;
 
+type
+  HeapTracerCheckFlags = HeapTracer.CheckFlags;
+
   class function HeapTracer.CfSkipFrames(cf: CheckFlags): SizeUint;
+{$if sizeof(HeapTracerCheckFlags) = sizeof(uint32)}
   begin
     result := PopCnt(uint32(cf * CheckFlagsThatMeanFramesUninterestingInBacktraces));
   end;
+{$else}
+  var
+    f: CheckFlag;
+  begin
+    result := 0;
+    for f in cf * CheckFlagsThatMeanFramesUninterestingInBacktraces do
+      inc(result);
+  end;
+{$endif}
 
   function HeapTracer.DoGetMem(size: PtrUint): pointer;
   var
@@ -2150,7 +2196,7 @@ end;
         exit;
       end;
     end;
-  {$I+}
+  {$pop}
     outfp := @ownOutfp;
     needCloseOutfp := true;
     for i := 0 to ParamCount do
