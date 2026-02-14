@@ -104,6 +104,7 @@ interface
 
        protected
           { inlining support }
+          inlinelevel             : PtrUInt;
           inlinelocals            : TFPObjectList;
           inlineinitstatement,
           inlinecleanupstatement  : tstatementnode;
@@ -319,10 +320,6 @@ interface
       { Current callnode, this is needed for having a link
        between the callparanodes and the callnode they belong to }
       aktcallnode : tcallnode;
-
-    const
-      { track current inlining depth }
-      inlinelevel : longint = 0;
 
 implementation
 
@@ -5646,6 +5643,14 @@ implementation
       end;
 
 
+    function setinlinelevel(var n:tnode; arg:pointer):foreachnoderesult;
+      begin
+        if n.nodetype=calln then
+          tcallnode(n).inlinelevel:=PtrUInt(arg);
+        result:=fen_false;
+      end;
+
+
     { reference symbols that are imported from another unit }
     function importglobalsyms(var n:tnode; arg:pointer):foreachnoderesult;
       var
@@ -5684,7 +5689,6 @@ implementation
         inlineblock,
         inlinecleanupblock : tblocknode;
       begin
-        inc(inlinelevel);
         result:=nil;
         if not(assigned(tprocdef(procdefinition).inlininginfo) and
                assigned(tprocdef(procdefinition).inlininginfo^.code)) then
@@ -5714,6 +5718,7 @@ implementation
         body:=tprocdef(procdefinition).inlininginfo^.code.getcopy;
         foreachnodestatic(pm_postprocess,body,@removeusercodeflag,nil);
         foreachnodestatic(pm_postprocess,body,@importglobalsyms,nil);
+        foreachnodestatic(pm_postprocess,body,@setinlinelevel,pointer(inlinelevel+1));
         foreachnode(pm_preprocess,body,@replaceparaload,@fileinfo);
 
         { Concat the body and finalization parts }
@@ -5779,7 +5784,6 @@ implementation
         writeln('**************************',tprocdef(procdefinition).mangledname);
         printnode(output,result);
 {$endif DEBUGINLINE}
-        dec(inlinelevel);
       end;
 
 end.
