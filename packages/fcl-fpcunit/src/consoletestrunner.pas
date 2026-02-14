@@ -66,11 +66,16 @@ type
     FNoExitCodeOnError : boolean;
     procedure DoStatus(const msg: string);
   protected
-    Class function StrToFormat(const S: String): TFormat;
+    const
+      CDefaultsFileNameConst = 'testdefaults.ini';
+      CDefaultsFileNameEnvVar = 'FPCUNITCONFIG';
+      CDefaultsFileIniSection = 'defaults';
     function DefaultsFileName: String; virtual;
+    procedure ReadDefaults; virtual;
+  protected
+    Class function StrToFormat(const S: String): TFormat;
     procedure RunSuite; virtual;
     procedure ShowTestList; virtual;
-    procedure ReadDefaults; virtual;
     procedure Usage; virtual;
     property FileName: string read FFileName write FFileName;
     property LongOpts: TStrings read FLongOpts write FLongOpts;
@@ -153,11 +158,6 @@ const
   ValPlainNoTiming = 'plainnotiming';
   ValLatex = 'latex';
   ValJUnit = 'junit';
-
-const
-  DefaultsFileNameConst = 'testdefaults.ini';
-  DefaultsFileNameEnvVar = 'FPCUNITCONFIG';
-  DefaultsFileParamSection = 'defaults';
 
 Type
   TTestDecoratorClass = Class of TTestDecorator;
@@ -414,11 +414,11 @@ begin
     WriteCustomHelp;
     writeln;
     writeln('Configuration file:');
-    writeln('  Defaults for long options can be specified in the "',DefaultsFileNameConst,'" file in the executable folder.');
-    writeln('  The path to this file can be overridden by the environment variable "',DefaultsFileNameEnvVar,'".');
-    writeln('  All values must be located in "[',DefaultsFileParamSection,']" section, the option names specified without the "--" sign.');
+    writeln('  Defaults for long options can be specified in the "',CDefaultsFileNameConst,'" file in the executable folder.');
+    writeln('  The path to this file can be overridden by the environment variable "',CDefaultsFileNameEnvVar,'".');
+    writeln('  All values must be located in "[',CDefaultsFileIniSection,']" section, the option names specified without the "--" sign.');
     writeln('  The value of logical options indicated via "1"/"0". Example file contents:');
-    writeln('    [',DefaultsFileParamSection,']');
+    writeln('    [',CDefaultsFileIniSection,']');
     writeln('    ',ArgAll,'=1');
     writeln('    ',ArgFormat,'=',ValPlain);
     writeln('    ',ArgSparse,'=1');
@@ -428,16 +428,16 @@ end;
 Function TTestRunner.DefaultsFileName : String;
 
 begin
-  Result:=GetEnvironmentVariable(DefaultsFileNameEnvVar);
+  Result:=GetEnvironmentVariable(CDefaultsFileNameEnvVar);
   if Result='' then
-    Result:=DefaultsFileNameConst;
+    Result:=CDefaultsFileNameConst;
   Result:=ExpandFileName(Result,Location);
 end;
 
 procedure TTestRunner.ReadDefaults;
 
 Const
-  S = DefaultsFileParamSection;
+  S = CDefaultsFileIniSection;
 
 Var
   Ini : TMemIniFile;
