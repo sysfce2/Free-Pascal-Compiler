@@ -55,6 +55,9 @@ interface
     type
       trecompile_reason = (rr_unknown,
         rr_noppu,rr_sourcenewer,rr_build,rr_crcchanged
+        {$IFDEF EnableCTaskPPU}
+        ,rr_buildcycle
+        {$ENDIF}
       );
 
 {$ifdef VER3_2}
@@ -105,6 +108,33 @@ interface
       end;
       tderefmaparray = array of tderefmaprec;
 
+      {$IFDEF EnableCTaskPPU}
+      tqueue_module_event = procedure(m: tmodule) of object;
+      {$ENDIF}
+
+      { tused_unit }
+
+      tused_unit = class(tlinkedlistitem)
+        checksum,
+        interface_checksum,
+        indirect_checksum: cardinal;
+        in_uses,
+        in_interface    : boolean;
+        u               : tmodule;
+        unitsym         : tunitsym;
+        {$IFDEF EnableCTaskPPU}
+        dependent_added : boolean;
+        {$ENDIF}
+        constructor create(_u : tmodule;intface,inuses:boolean;usym:tunitsym);
+        procedure check_hints;
+      end;
+
+      tdependent_unit = class(tlinkedlistitem)
+        u : tmodule;
+        in_interface : boolean;
+        constructor create(_u : tmodule; frominterface : boolean);
+      end;
+
       { tmodule }
 
       tmodule = class(tmodulebase)
@@ -113,6 +143,9 @@ interface
       public
         is_reset,                 { has reset been called ? }
         do_reload,                { force reloading of the unit }
+        {$IFDEF EnableCTaskPPU}
+        fromppu: boolean;
+        {$ENDIF}
         sources_avail,            { if all sources are reachable }
         interface_compiled,       { if the interface section has been parsed/compiled/loaded }
         is_dbginfo_written,
@@ -203,7 +236,7 @@ interface
 
         moduleoptions: tmoduleoptions;
         deprecatedmsg: pshortstring;
-        loadcount : integer;
+        loadcount : integer; // EnableCTaskPPU: remove
         compilecount : integer;
         consume_semicolon_after_uses : Boolean;
         initfinalchecked : boolean;
@@ -225,11 +258,11 @@ interface
           functions generated }
         used_rtti_attrs: tfpobjectlist;
 
-        { this contains a list of units that needs to be waited for until the
+        { this contains a list of units (tmodule) that needs to be waited for until the
           unit can be finished (code generated, etc.); this is needed to handle
           specializations in circular unit usages correctly }
         waitingforunit: tfpobjectlist;
-        { this contains a list of all units that are waiting for this unit to be
+        { this contains a list of all units (tmodule) that are waiting for this unit to be
           finished }
         waitingunits: tfpobjectlist;
 
@@ -243,7 +276,7 @@ interface
           constant assignments at the module level; does not have to be saved
           into the ppu file, because translated into code during compilation)
            -- actual type: tnode (but fmodule should not depend on node) }
-         tcinitcode     : tobject;
+        tcinitcode     : tobject;
 
         { the current extended rtti directive }
         rtti_directive : trtti_directive;
@@ -255,9 +288,17 @@ interface
         constructor create(LoadedFrom:TModule;const amodulename: string; const afilename:TPathStr;_is_unit:boolean);
         destructor destroy;override;
         procedure reset(for_recompile: boolean);virtual;
+        function statestr: string; virtual;
         procedure loadlocalnamespacelist;
         procedure adddependency(callermodule:tmodule; frominterface : boolean);
+        procedure removedependency(callermodule:tmodule);
+        function hasdependency(callermodule:tmodule): boolean;
         procedure flagdependent(callermodule:tmodule);
+        {$IFDEF EnableCTaskPPU}
+        procedure disconnect_depending_modules; virtual;
+        function is_reload_needed(du: tdependent_unit): boolean; virtual; // true if reload needed after self changed
+        class var queue_module: tqueue_module_event;
+        {$ENDIF}
         procedure addimportedsym(sym:TSymEntry);
         function  addusedunit(hp:tmodule;inuses:boolean;usym:tunitsym):tused_unit;
         function  usesmodule_in_interface(m : tmodule) : boolean;
@@ -280,26 +321,6 @@ interface
         property ImportLibraryList : TFPHashObjectList read FImportLibraryList;
         function ToString: RTLString; override;
       end;
-
-       { tused_unit }
-
-       tused_unit = class(tlinkedlistitem)
-          checksum,
-          interface_checksum,
-          indirect_checksum: cardinal;
-          in_uses,
-          in_interface    : boolean;
-          u               : tmodule;
-          unitsym         : tunitsym;
-          constructor create(_u : tmodule;intface,inuses:boolean;usym:tunitsym);
-          procedure check_hints;
-       end;
-
-       tdependent_unit = class(tlinkedlistitem)
-          u : tmodule;
-          in_interface : boolean;
-          constructor create(_u : tmodule; frominterface : boolean);
-       end;
 
     var
        main_module       : tmodule;     { Main module of the program }
@@ -853,6 +874,9 @@ implementation
         m : tmodule;
       begin
         is_reset:=true;
+        {$IFDEF EnableCTaskPPU}
+        fromppu:=false;
+        {$ENDIF}
         LoadCount:=0;
         if assigned(scanner) then
           begin
@@ -960,8 +984,7 @@ implementation
           used_units.free;
           used_units:=TLinkedList.Create;
           end;
-        dependent_units.free;
-        dependent_units:=TLinkedList.Create;
+        // keep dependent_units
         resourcefiles.Free;
         resourcefiles:=TCmdStrList.Create;
         linkorderedsymbols.Free;
@@ -1071,42 +1094,116 @@ implementation
         { This is not needed for programs }
         if not callermodule.is_unit then
           exit;
+        if hasdependency(callermodule) then exit;
         Message2(unit_u_add_depend_to,callermodule.modulename^,modulename^);
         dependent_units.concat(tdependent_unit.create(callermodule,frominterface));
       end;
 
+    procedure tmodule.removedependency(callermodule: tmodule);
+      var
+        du, nextdu: tdependent_unit;
+      begin
+        du:=tdependent_unit(dependent_units.First);
+        while Assigned(du) do
+        begin
+          nextdu:=tdependent_unit(du.Next);
+          if du.u=callermodule then
+            dependent_units.Remove(du);
+          du:=nextdu;
+        end;
+      end;
+
+    function tmodule.hasdependency(callermodule: tmodule): boolean;
+      var
+        du: tdependent_unit;
+      begin
+        du:=tdependent_unit(dependent_units.First);
+        while Assigned(du) do
+        begin
+          if du.u=callermodule then
+            exit(true);
+          du:=tdependent_unit(du.Next);
+        end;
+        Result:=false;
+      end;
 
     procedure tmodule.flagdependent(callermodule:tmodule);
       var
-        pm : tdependent_unit;
+        dm : tdependent_unit;
         m : tmodule;
 
       begin
         { flag all units that depend on this unit for reloading }
-        pm:=tdependent_unit(dependent_units.first);
-        while assigned(pm) do
-         begin
-           { We do not have to reload the unit that wants to load
-             this unit, unless this unit is already compiled during
-             the loading }
-           m:=pm.u;
-           {$IFDEF DEBUG_PPU_CYCLES}
-           writeln('PPUALGO tmodule.flagdependent ',modulename^,' state=',state,', dependent ',m.modulename^,' ',m.state);
-           {$ENDIF}
-           if (m=callermodule) and (m.state<ms_compiled_waitcrc) then
-             Message1(unit_u_no_reload_is_caller,m.modulename^)
-           else
-            if (m.state=ms_compile) {and (pm.u.compilecount>1)} then
-              Message1(unit_u_no_reload_in_second_compile,m.modulename^)
-           else
-            begin
-              m.do_reload:=true;
-              Message1(unit_u_flag_for_reload,m.modulename^);
-            end;
-           pm:=tdependent_unit(pm.next);
-         end;
+        dm:=tdependent_unit(dependent_units.first);
+        while assigned(dm) do
+        begin
+          { We do not have to reload the unit that wants to load
+            this unit, unless this unit is already compiled during
+            the loading }
+          m:=dm.u;
+          {$IFDEF DEBUG_PPU_CYCLES}
+          writeln('PPUALGO tmodule.flagdependent ',modulename^,' state=',statestr,', is used by ',BoolToStr(dm.in_interface,'interface','implementation'),' of ',m.modulename^,' ',m.statestr);
+          {$ENDIF}
+          {$IFDEF EnableCTaskPPU}
+          if not m.do_reload and is_reload_needed(dm) then
+          begin
+            m.do_reload:=true;
+            Message1(unit_u_flag_for_reload,m.modulename^);
+            queue_module(m);
+            { We have to flag the units that depend on this unit even
+              though it didn't change, because they might also
+              indirectly depend on the unit that did change (e.g.,
+              in case rgobj, rgx86 and rgcpu have been compiled
+              already, and then rgobj is recompiled for some reason
+              -> rgx86 is re-reresolved, but the vmtentries of trgcpu
+              must also be re-resolved, because they will also contain
+              pointers to procdefs in the old trgobj (in case of a
+              recompile, all old defs are freed) }
+            flagdependent(m);
+          end;
+          {$ELSE}
+          if (m=callermodule) and (m.state<ms_compiled_waitcrc) then
+            Message1(unit_u_no_reload_is_caller,m.modulename^)
+          else if (m.state=ms_compile) then
+            Message1(unit_u_no_reload_in_second_compile,m.modulename^)
+          else
+          begin
+            m.do_reload:=true;
+            Message1(unit_u_flag_for_reload,m.modulename^);
+          end;
+          {$ENDIF}
+          dm:=tdependent_unit(dm.next);
+        end;
       end;
 
+    function tmodule.statestr: string;
+    begin
+      str(state,Result);
+      if do_reload then
+        Result:='do_reload,'+Result;
+    end;
+
+    {$IFDEF EnableCTaskPPU}
+    procedure tmodule.disconnect_depending_modules;
+    var
+      uu: tused_unit;
+    begin
+      uu:=tused_unit(used_units.first);
+      while assigned(uu) do
+      begin
+        uu.u.removedependency(self);
+        uu.dependent_added:=false;
+        uu:=tused_unit(uu.next);
+      end;
+    end;
+
+    function tmodule.is_reload_needed(du: tdependent_unit): boolean;
+      begin
+        Result:=(du.u.state in [ms_compiling_waitfinish,ms_compiled_waitcrc,ms_compiled,ms_processed])
+             or (du.in_interface and du.u.interface_compiled);
+        // Note: see also the override in fppu.tppumodule
+      end;
+    {$ENDIF EnableCTaskPPU}
 
     procedure tmodule.addimportedsym(sym:TSymEntry);
       begin
@@ -1123,9 +1220,33 @@ implementation
         addusedunit:=pu;
       end;
 
-
     function tmodule.usedunitsloaded(interface_units : boolean; out firstwaiting : tmodule): boolean;
-
+    {$IFDEF EnableCTaskPPU}
+      var
+        uu: tused_unit;
+        ok: Boolean;
+      begin
+        Result:=true;
+        firstwaiting:=nil;
+        uu:=tused_unit(used_units.First);
+        while assigned(uu) do
+        begin
+          ok:=uu.u.interface_compiled and not uu.u.do_reload;
+          { $IFDEF DEBUG_CTASK_VERBOSE}
+          writeln('  ',ToString,' checking state of ', uu.u.ToString,' : ',uu.u.statestr,' : ',ok);
+          { $ENDIF}
+          if not ok then
+          begin
+            Result:=false;
+            firstwaiting:=uu.u;
+            {$IFNDEF DEBUG_CTASK_VERBOSE}
+            break;
+            {$ENDIF}
+          end;
+          uu:=tused_unit(uu.Next);
+        end;
+      end;
+    {$ELSE}
       const
         statesneeded : array[boolean] of tmodulestates = (
           [ms_processed, ms_compiled, ms_compiling_waitimpl, ms_compiling_waitfinish, ms_compiled_waitcrc],
@@ -1157,6 +1278,7 @@ implementation
           itm:=itm.Next;
           end;
       end;
+    {$ENDIF}
 
     function tmodule.nowaitingforunits(out firstwaiting : tmodule): Boolean;
 

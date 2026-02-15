@@ -292,8 +292,13 @@ begin
   Step:='Second compile';
   UnitPath:=Dir+';'+Dir+PathDelim+'src2';
   Compile;
+  {$IFDEF EnableCTaskPPU}
+  // the main src is always compiled, bird changed, ant is only reloaded, not recompiled
+  CheckCompiled(['changeleaf1_prg.pas','changeleaf1_bird.pas']);
+  {$ELSE}
   // the main src is always compiled, bird changed, so ant must be recompiled as well
   CheckCompiled(['changeleaf1_prg.pas','changeleaf1_ant.pas','changeleaf1_bird.pas']);
+  {$ENDIF}
 end;
 
 procedure TTestRecompile.TestChangeInner1;
@@ -391,12 +396,19 @@ begin
   Step:='Second compile';
   UnitPath:=Dir+';'+Dir+PathDelim+'src2';
   Compile;
+  {$IFDEF EnableCTaskPPU}
+  // the main src is always compiled, cat changed but not crc,
+  // because a ppu needs the crc, bird waits in intf, so ant waits in intf, creating a waiting loop
+  // triggering a recompile of all the ppus of the whole cycle
+  CheckCompiled(['cycle3_changec_prg.pas','cycle3_changec_ant.pas','cycle3_changec_bird.pas','cycle3_changec_cat.pas']);
+  {$ELSE}
   // the main src is always compiled, cat changed, so bird must be recompiled as well
   CheckCompiled(['cycle3_changec_prg.pas','cycle3_changec_ant.pas','cycle3_changec_bird.pas','cycle3_changec_cat.pas']);
+  {$ENDIF}
 end;
 
 procedure TTestRecompile.TestCycleImpl3_ChangeC;
-// prog->ant->bird->cat, cat.impl->ant, change cat
+// prog->ant.impl->bird.impl->cat, cat.impl->ant, change cat impl
 var
   Dir: String;
 begin
@@ -416,8 +428,13 @@ begin
   Step:='Second compile';
   UnitPath:=Dir+';'+Dir+PathDelim+'src2';
   Compile;
+  {$IFDEF EnableCTaskPPU}
+  // the main src is always compiled, cat changed but not crc
+  CheckCompiled(['cycleimpl3_changec_prg.pas','cycleimpl3_changec_cat.pas']);
+  {$ELSE}
   // the main src is always compiled, cat changed, so bird must be recompiled as well
   CheckCompiled(['cycleimpl3_changec_prg.pas','cycleimpl3_changec_ant.pas','cycleimpl3_changec_bird.pas','cycleimpl3_changec_cat.pas']);
+  {$ENDIF}
 end;
 
 procedure TTestRecompile.TestChangeInlineBodyBug;
@@ -474,10 +491,15 @@ begin
 end;
 
 procedure TTestRecompile.TestBug41457;
+// ant: intf->bird
+// bird: intf->seagull,eagle, impl->ant
+// seagull: impl->bird
+// eagle: intf->hawk
+// hawk: impl->bird
 begin
   UnitPath:='bug41457';
   OutDir:=UnitPath+PathDelim+'ppus';
-  MainSrc:=UnitPath+PathDelim+'bug41457_bird.pas';
+  MainSrc:=UnitPath+PathDelim+'bug41457_ant.pas';
 
   Step:='First compile';
   CleanOutputDir;
@@ -489,11 +511,13 @@ begin
     'bug41457_seagull.pas']);
 
   Step:='Second compile';
-  // the two deepest nodes of the two cycles are eagle and hawk, which are not recompiled
   Compile;
-  CheckCompiled(['bug41457_ant.pas',
-    'bug41457_bird.pas',
-    'bug41457_seagull.pas']);
+  {$IFDEF EnableCTaskPPU}
+  CheckCompiled(['bug41457_ant.pas']);
+  {$ELSE}
+  // the main src is always compiled
+  CheckCompiled(['bug41457_ant.pas','bug41457_bird.pas','bug41457_seagull.pas']);
+  {$ENDIF}
 end;
 
 procedure TTestRecompile.TestImplInline1;
@@ -511,8 +535,13 @@ begin
 
   Step:='Second compile';
   Compile;
+  {$IFDEF EnableCTaskPPU}
+  // the main src is always compiled
+  CheckCompiled(['implinline1_ant.pas']);
+  {$ELSE}
   // the main src is always compiled, and since bird ppu depends on ant, it is always compiled as well
   CheckCompiled(['implinline1_ant.pas','implinline1_bird.pas']);
+  {$ENDIF}
 end;
 
 procedure TTestRecompile.TestImplInline2;
@@ -602,11 +631,16 @@ begin
   Step:='Second compile';
   UnitPath:=Dir+';'+Dir+PathDelim+'src2';
   Compile;
+  {$IFDEF EnableCTaskPPU}
+  // the main src is always compiled, cat impl of the generic changed, so specialization in ant changed
+  CheckCompiled(['generic_indirectuses_prg.pas','generic_indirectuses_ant.pas','generic_indirectuses_cat.pas']);
+  {$ELSE}
   // the main src is always compiled,
   // cat changed, so bird must be recompiled as well. bird should get the same CRCs.
   // finally even though ant does ant directly use cat, ant specializes the changed generic
   //   function from cat, so ant must be recompiled as well.
   CheckCompiled(['generic_indirectuses_prg.pas','generic_indirectuses_ant.pas','generic_indirectuses_bird.pas','generic_indirectuses_cat.pas']);
+  {$ENDIF}
 end;
 
 initialization

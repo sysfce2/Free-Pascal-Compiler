@@ -192,6 +192,7 @@ implementation
         hp : tppumodule;
         unitsym : tunitsym;
         isnew,load_ok : boolean;
+        uu: tused_unit;
 
       begin
         { load unit }
@@ -199,24 +200,29 @@ implementation
         if isnew then
           usedunits.concat(tused_unit.create(hp,true,addasused,nil));
         load_ok:=hp.loadppu(curr);
-        hp.adddependency(curr,curr.in_interface);
         if not load_ok then
           { We must schedule a compile. }
           task_handler.addmodule(hp);
+        hp.adddependency(curr,curr.in_interface);
 
         { add to symtable stack }
         if assigned(hp.globalsymtable) then
           symtablestack.push(hp.globalsymtable);
         if (m_mac in current_settings.modeswitches) and
             assigned(hp.globalmacrosymtable) then
-           macrosymtablestack.push(hp.globalmacrosymtable);
+          macrosymtablestack.push(hp.globalmacrosymtable);
         { insert unitsym }
         unitsym:=cunitsym.create(hp.modulename^,hp);
         inc(unitsym.refs);
         tabstractunitsymtable(curr.localsymtable).insertunit(unitsym);
         if addasused then
+        begin
           { add to used units }
-          curr.addusedunit(hp,false,unitsym);
+          uu:=curr.addusedunit(hp,false,unitsym);
+          {$IFDEF EnableCTaskPPU}
+          uu.dependent_added:=true;
+          {$ENDIF}
+        end;
         result:=hp;
       end;
 
@@ -701,7 +707,6 @@ implementation
          pu  : tused_unit;
          state: tglobalstate;
          isLoaded : Boolean;
-         mwait : tmodule;
          lu : tmodule;
 
          procedure restorestate;
@@ -719,12 +724,11 @@ implementation
 
       begin
         Result:=true;
-        mwait:=nil;
         current_scanner.tempcloseinputfile;
         state:=tglobalstate.create(true);
-         { Load the units }
-         pu:=tused_unit(curr.used_units.first);
-         while assigned(pu) do
+        { Load the units }
+        pu:=tused_unit(curr.used_units.first);
+        while assigned(pu) do
           begin
             lu:=pu.u;
             { Only load the units that are in the current
@@ -732,18 +736,39 @@ implementation
             if pu.in_uses and
                (pu.in_interface=frominterface) then
              begin
-               if (lu.state in [ms_compiling_waitimpl..ms_compiled,ms_processed]) then
+               {$IFDEF EnableCTaskPPU}
+               // always call loadppu for the cycle test
+               tppumodule(lu).loadppu(curr);
+               if not (curr.state in [ms_compile,ms_compiling_wait,ms_compiling_waitintf,ms_compiling_waitimpl]) then
+               begin
+                 {$IFDEF DEBUG_PPU_CYCLES}
+                 writeln('loadunits STOPPED ',curr.modulename^,' ',curr.statestr);
+                 {$ENDIF}
+                 Result:=false;
+                 break;
+               end;
+               if not pu.dependent_added then
+               begin
+                 pu.dependent_added:=true;
+                 lu.adddependency(curr,frominterface);
+               end;
+               if not lu.interface_compiled or lu.do_reload then
+               begin
+                 // an used unit is delayed
+                 // Important: load the rest of the uses section
+                 Result:=false;
+               end;
+               {$ELSE}
+               if lu.interface_compiled then
                  isLoaded:=true
                else if (lu.state=ms_registered) then
                   // try to load
-                 isLoaded:=tppumodule(lu).loadppu(curr)
+                 isLoaded:=tppumodule(lu).loadppu(curr) and lu.interface_compiled
                else
                  isLoaded:=False;
                isLoaded:=IsLoaded and not lu.is_reset ;
                if not IsLoaded then
                  begin
-                   if mwait=nil then
-                     mwait:=lu;
                    // In case of is_reset, the task handler will discard the state if the module was already there
                    task_handler.addmodule(lu);
                  end;
@@ -753,17 +778,18 @@ implementation
                if curr.is_reset then
                  break;
                { is our module compiled? then we can stop }
-               if curr.state in [ms_compiled,ms_processed] then
+               if curr.state in [ms_compiled_waitcrc,ms_compiled,ms_processed] then
                  break;
                { add this unit to the dependencies }
                lu.adddependency(curr,frominterface);
+               {$ENDIF}
                { check hints }
                pu.check_hints;
              end;
             pu:=tused_unit(pu.next);
           end;
 
-         Restorestate;
+        Restorestate;
       end;
 
      {
@@ -1307,10 +1333,13 @@ type
         curr.in_interface:=false;
         curr.interface_compiled:=true;
 
+        {$IFDEF EnableCTaskPPU}
+        {$ELSE}
         { First reload all units depending on our interface, we need to do this
           in the implementation part to prevent erroneous circular references }
         tppumodule(curr).setdefgeneration;
         tppumodule(curr).reload_flagged_units;
+        {$ENDIF}
 
         { Parse the implementation section }
         if (m_mac in current_settings.modeswitches) and try_to_consume(_END) then
@@ -3009,9 +3038,15 @@ type
          else
            curr.consume_semicolon_after_uses:=false;
 
+         {$IFDEF EnableCTaskPPU}
+         if curr.is_initial then
+           load_ok:=false; // delay program, so ctask can finish all units
          if not load_ok then
            curr.state:=ms_compiling_wait;
-
+         {$ELSE}
+         if not load_ok then
+           curr.state:=ms_compiling_wait;
+         {$ENDIF}
 
          { Can we continue compiling ? }
 
